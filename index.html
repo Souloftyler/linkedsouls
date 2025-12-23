@@ -31,7 +31,19 @@
         }
         
         h1, h2, .fantasy-font { font-family: 'Cinzel', serif; }
-        .story-text { font-family: 'Lora', serif; line-height: 1.7; }
+        .story-text { 
+            font-family: 'Lora', serif; 
+            line-height: 1.5;
+        }
+
+        /* Limitation à 5 lignes max pour la description */
+        .story-text-clamped {
+            display: -webkit-box;
+            -webkit-line-clamp: 5;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
         main {
             flex: 1;
@@ -46,12 +58,11 @@
             flex: 1;
             overflow-y: auto; 
             -webkit-overflow-scrolling: touch;
-            padding: 1.5rem;
+            padding: 1rem;
             touch-action: pan-y;
         }
         .tab-content.active { display: flex; flex-direction: column; }
 
-        /* Le cadre unique pour la narration et les actions */
         .story-container {
             background: rgba(28, 25, 23, 0.6);
             border: 1px solid rgba(68, 64, 60, 0.4);
@@ -59,22 +70,23 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            flex-shrink: 0;
         }
 
         .action-btn {
             background: rgba(12, 10, 9, 0.4);
-            border-top: 1px solid rgba(68, 64, 60, 0.3);
+            border-top: 1px solid rgba(68, 64, 60, 0.2);
             transition: all 0.2s ease;
             text-align: left;
             width: 100%;
-            padding: 1.25rem;
+            padding: 1rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             font-size: 0.7rem;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.05em;
         }
         .action-btn:active { background: rgba(59, 130, 246, 0.1); color: var(--ethereal-blue); }
         .action-btn.disabled { opacity: 0.3; pointer-events: none; }
@@ -92,8 +104,7 @@
 </head>
 <body class="bg-stone-950">
 
-    <!-- HEADER STATS -->
-    <header class="flex-none bg-stone-900/95 border-b border-stone-800 p-4 flex justify-between items-center z-20 backdrop-blur-md">
+    <header class="flex-none bg-stone-900/95 border-b border-stone-800 p-3 flex justify-between items-center z-20 backdrop-blur-md">
         <div class="flex items-center space-x-3">
             <div class="relative w-10 h-10">
                 <canvas id="healthMiniChart"></canvas>
@@ -121,50 +132,42 @@
     </header>
 
     <main>
-        <!-- ONGLET MONDE -->
         <div id="tab-story" class="tab-content active">
-            <!-- TITRE LIEU -->
-            <div class="flex justify-between items-center mb-4">
+            <div class="flex justify-between items-center mb-3">
                 <span id="currentLocationTitle" class="text-[9px] text-stone-500 uppercase font-bold tracking-[0.2em]">Chargement...</span>
                 <span id="fatigueText" class="text-[7px] text-stone-600 uppercase font-bold">Fatigue 0%</span>
             </div>
             
-            <!-- ÉQUIPEMENT RAPIDE (Plus compact) -->
-            <div class="grid grid-cols-3 gap-2 mb-4 flex-none">
+            <div class="grid grid-cols-3 gap-2 mb-3 flex-none">
                 <div class="equipment-slot p-2 flex flex-col items-center" id="ui-slot-rightHand">
-                    <span class="text-[14px]" id="icon-rightHand">⚔️</span>
+                    <span class="text-[12px]" id="icon-rightHand">⚔️</span>
                     <p class="text-[7px] text-stone-400 mt-1 truncate w-full text-center font-bold uppercase" id="name-rightHand">Main D.</p>
                 </div>
                 <div class="equipment-slot p-2 flex flex-col items-center" id="ui-slot-leftHand">
-                    <span class="text-[14px]" id="icon-leftHand">🛡️</span>
+                    <span class="text-[12px]" id="icon-leftHand">🛡️</span>
                     <p class="text-[7px] text-stone-400 mt-1 truncate w-full text-center font-bold uppercase" id="name-leftHand">Main G.</p>
                 </div>
                 <div class="equipment-slot p-2 flex flex-col items-center" id="ui-slot-armor">
-                    <span class="text-[14px]" id="icon-armor">👕</span>
+                    <span class="text-[12px]" id="icon-armor">👕</span>
                     <p class="text-[7px] text-stone-400 mt-1 truncate w-full text-center font-bold uppercase" id="name-armor">Corps</p>
                 </div>
             </div>
 
             <div id="itemNotificationArea" class="mb-2 space-y-1"></div>
             
-            <!-- LE CADRE UNIQUE SCROLLABLE -->
-            <div class="story-container flex-none mb-6">
-                <!-- Texte de l'histoire -->
-                <div id="storyLog" class="p-5 story-text text-stone-300 text-sm italic border-b border-stone-800/30">
-                    <!-- Texte ici -->
+            <div class="story-container">
+                <div id="storyLog" class="p-4 story-text story-text-clamped text-stone-300 text-xs italic">
+                    <!-- Texte limité à 5 lignes -->
                 </div>
                 
-                <!-- Liste des actions fusionnée -->
-                <div id="actionPanel" class="bg-stone-900/20">
+                <div id="actionPanel" class="bg-stone-900/30">
                     <!-- Boutons ici -->
                 </div>
             </div>
             
-            <!-- Espace supplémentaire pour éviter que le scroll soit bloqué par la nav -->
-            <div class="h-10 flex-none"></div>
+            <div class="h-6 flex-none"></div>
         </div>
 
-        <!-- AUTRES ONGLETS -->
         <div id="tab-inventory" class="tab-content">
             <h2 class="text-stone-500 text-[10px] font-bold uppercase mb-4 tracking-widest border-b border-stone-800 pb-2">Inventaire</h2>
             <div id="inventoryList" class="space-y-2"></div>
@@ -176,7 +179,6 @@
         </div>
     </main>
 
-    <!-- NAVIGATION BASSE -->
     <nav class="flex-none bg-stone-900 border-t border-stone-800 flex justify-around items-center py-2 pb-4 z-30">
         <button onclick="switchTab('story')" class="nav-item flex flex-col items-center text-blue-500" id="nav-story">
             <span class="text-xl">🧭</span>
@@ -197,47 +199,46 @@
             hp: 100, gold: 50, fatigue: 0,
             equipment: { rightHand: null, leftHand: null, armor: null },
             inventory: [
-                { id: 'fiole_rouge', name: "Fiole de Sang", icon: "🧪", type: "consumable", count: 2, heal: 30, desc: "Restaure un peu de vie." },
-                { id: 'rations', name: "Rations", icon: "🍞", type: "consumable", count: 3, heal: 15, desc: "Nourriture de voyage." }
+                { id: 'fiole_rouge', name: "Fiole de Sang", icon: "🧪", type: "consumable", count: 2, heal: 30, desc: "Soin léger." }
             ],
-            notes: ["Réveil sur les quais."],
+            notes: ["Réveil sur les quais de Port-Sable."],
             currentStep: 'port_entry'
         };
 
         const storyData = {
             port_entry: {
                 title: "Quais de Port-Sable",
-                text: "La brume est si épaisse qu'on ne distingue plus l'horizon. L'odeur de sel se mêle à celle de la charogne. Devant vous, un vieux pêcheur nommé **Elias** semble surveiller les eaux sombres. Au loin, les lumières du Marché Noir scintillent comme des yeux de prédateurs. C'est ici que tout commence.",
+                text: "La brume est si épaisse qu'on ne distingue plus l'horizon. L'odeur de sel se mêle à celle de la charogne. Devant vous, un vieux pêcheur nommé Elias semble surveiller les eaux sombres. Au loin, les lumières du Marché Noir scintillent comme des yeux de prédateurs affamés. C'est ici que tout commence pour vous, au milieu des débris d'un monde qui refuse de mourir.",
                 actions: [
                     { label: "Parler à Elias", next: 'elias_talk', icon: "👤" },
-                    { label: "Explorer le Marché Noir", next: 'market', icon: "🏺" },
-                    { label: "Partir vers le Sud", next: 'south', icon: "🥾", fatigue: 10 }
+                    { label: "Le Marché Noir", next: 'market', icon: "🏺" },
+                    { label: "Route du Sud", next: 'south', icon: "🥾", fatigue: 10 }
                 ]
             },
             elias_talk: {
                 title: "Conseils d'Elias",
-                text: "« Ne regarde pas trop longtemps dans l'eau, étranger. Ce qui y vit n'aime pas être observé. Prends garde à ta fatigue, elle est plus meurtrière que n'importe quelle lame. »",
+                text: "« Ne regarde pas trop longtemps dans l'eau, étranger. Ce qui y vit n'aime pas être observé par les vivants. Prends garde à ta fatigue, elle est plus meurtrière que n'importe quelle lame forgée. La faim et le sommeil sont tes pires ennemis dans cette contrée oubliée des dieux. »",
                 actions: [
-                    { label: "Remercier et partir", next: 'port_entry', icon: "↩️" }
+                    { label: "Partir", next: 'port_entry', icon: "↩️" }
                 ]
             },
             market: {
                 title: "Le Marché Noir",
-                text: "Un dédale d'étals où l'on vend tout ce qui est interdit. L'acier ici est cher, mais fiable.",
+                text: "Un dédale d'étals miteux où l'on vend tout ce qui est interdit par la loi et la morale. L'acier ici est cher, mais c'est la seule protection fiable contre les ombres. Des marchands borgnes vous observent en silence.",
                 actions: [
-                    { label: "Dague en Os (30g)", next: 'buy_bone', cost: 30, icon: "🦴" },
-                    { label: "Retourner aux quais", next: 'port_entry', icon: "↩️" }
+                    { label: "Acheter Dague (30g)", next: 'buy_bone', cost: 30, icon: "🦴" },
+                    { label: "Quitter", next: 'port_entry', icon: "↩️" }
                 ]
             },
             buy_bone: {
                 title: "Nouvelle Arme",
-                text: "Une dague sculptée dans un fémur de créature inconnue. Elle vibre légèrement dans votre main.",
+                text: "Une dague sculptée dans un fémur de créature inconnue. Elle vibre légèrement dans votre main, comme si elle réclamait son dû. C'est un outil de mort efficace, bien que rudimentaire.",
                 actions: [{ label: "Continuer", next: 'market', icon: "🧭" }],
                 onEnter: () => addItem({ id: 'bone_dagger', name: "Dague Os", icon: "🗡️", type: "weapon", value: 12, desc: "Légère et maudite." })
             },
             south: {
                 title: "Route du Sud",
-                text: "La route est longue. La fatigue commence à peser sur vos épaules alors que vous progressez dans les terres désolées.",
+                text: "La route est longue et désolée. Les herbes sèches sifflent sous le vent mauvais. La fatigue commence à peser lourdement sur vos épaules alors que vous progressez péniblement vers l'inconnu.",
                 actions: [{ label: "Revenir", next: 'port_entry', icon: "↩️" }]
             }
         };
@@ -270,9 +271,6 @@
             if (!step) return;
             state.currentStep = stepId;
             if (step.onEnter) step.onEnter();
-
-            // Reset scroll interne
-            document.getElementById('tab-story').scrollTop = 0;
 
             document.getElementById('currentLocationTitle').innerText = step.title;
             document.getElementById('storyLog').innerHTML = step.text;
