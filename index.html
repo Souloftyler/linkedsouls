@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+       <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -366,4 +366,270 @@
                 state.inventory.push({ ...item, count: item.count || 1 });
             }
             
-            showNotification(`+ ${item.       
+            showNotification(`+ ${item.name}`);
+            updateInventoryUI();
+            updateUI();
+            saveGame();
+            return true;
+        }
+
+        /**
+         * Utilise ou équipe un objet de l'inventaire.
+         * @param {string} itemId - L'identifiant de l'objet.
+         */
+        function useItem(itemId) {
+            const index = state.inventory.findIndex(i => i.id === itemId);
+            const item = state.inventory[index];
+            if (!item) return;
+
+            if (['weapon', 'armor', 'offhand'].includes(item.type)) {
+                let slot = item.type === 'weapon' ? 'rightHand' : (item.type === 'armor' ? 'armor' : 'leftHand');
+                
+                if (state.equipment[slot]?.id === item.id) {
+                    state.equipment[slot] = null;
+                    showNotification(`${item.name} retiré`);
+                } else {
+                    // Équiper
+                    // Trouver l'ancien objet (s'il existe) pour s'assurer qu'il reste dans l'inventaire
+                    const oldItem = state.equipment[slot];
+                    if (oldItem) {
+                        // Pas besoin de déséquiper si l'objet est déjà dans l'inventaire, 
+                        // mais il faut s'assurer que l'état d'équipement est mis à jour
+                    }
+                    state.equipment[slot] = item;
+                    showNotification(`${item.name} équipé`);
+                }
+            } else {
+                // Consommable
+                if (item.heal) state.hp = Math.min(100, (item.heal === 100 ? 100 : state.hp + item.heal));
+                if (item.restoreFatigue) state.fatigue = 0;
+                
+                item.count--;
+                showNotification(`Utilisation de ${item.name}`);
+                if (item.count <= 0) state.inventory.splice(index, 1);
+            }
+            updateUI();
+            updateInventoryUI();
+            saveGame();
+        }
+
+        let healthChart = null;
+
+        /** Met à jour tous les éléments d'interface utilisateur (stats, équipement). */
+        function updateUI() {
+            document.getElementById('hpValue').innerText = Math.max(0, state.hp);
+            document.getElementById('goldValue').innerText = state.gold;
+            
+            const atk = state.equipment.rightHand?.value || 0;
+            const def = (state.equipment.leftHand?.value || 0) + (state.equipment.armor?.value || 0);
+            
+            document.getElementById('header-stat-atk').innerText = atk;
+            document.getElementById('header-stat-def').innerText = def;
+            document.getElementById('fatigueProgress').style.width = state.fatigue + "%";
+            document.getElementById('fatigueText').innerText = `Fatigue ${state.fatigue}%`;
+
+            ['rightHand', 'leftHand', 'armor'].forEach(slot => {
+                const item = state.equipment[slot];
+                document.getElementById('name-' + slot).innerText = item ? item.name : 'Vide';
+                document.getElementById('icon-' + slot).innerText = item ? item.icon : (slot==='armor'?'👕':slot==='leftHand'?'🛡️':'⚔️');
+                document.getElementById('stat-' + slot).innerText = item ? (slot==='rightHand'?'ATK +':'DEF +') + item.value : '';
+                document.getElementById('ui-slot-' + slot).classList.toggle('active', !!item);
+            });
+
+            if (healthChart) {
+                // Mettre à jour le graphique de santé
+                healthChart.data.datasets[0].data = [state.hp, 100 - state.hp];
+                healthChart.update();
+            }
+        }
+
+        /** * Rend le contenu d'une nouvelle étape de l'histoire et met à jour les actions.
+         * @param {string} stepId - L'ID de l'étape de l'histoire.
+         */
+        function renderStep(stepId) {
+            const step = storyData[stepId];
+            if (!step) return;
+            
+            // Si on change d'étape, on sauve avant de potentiellement appliquer des effets
+            saveGame(); 
+
+            state.currentStep = stepId;
+            if (step.onEnter) step.onEnter();
+
+            document.getElementById('currentLocationTitle').innerText = step.title;
+            document.getElementById('storyLog').innerHTML = `
+                <div class="fade-in bg-stone-900/50 p-6 rounded-xl border border-stone-800">
+                    <p class="story-text text-stone-300 text-sm italic">${step.text}</p>
+                </div>`;
+
+            const panel = document.getElementById('actionPanel');
+            panel.innerHTML = '';
+            step.actions.forEach(act => {
+                const canAfford = !act.cost || state.gold >= act.cost;
+                const btn = document.createElement('button');
+                btn.className = `action-btn p-4 rounded-xl flex justify-between items-center text-[9px] font-bold uppercase tracking-widest ${!canAfford ? 'disabled' : ''}`;
+                btn.innerHTML = `<span>${act.icon} ${act.label} ${act.cost ? `(${act.cost}g)` : ''}</span> <span>→</span>`;
+                btn.onclick = () => {
+                    if (act.cost) state.gold -= act.cost;
+                    if (act.fatigue) state.fatigue = Math.min(100, state.fatigue + act.fatigue);
+                    renderStep(act.next);
+                };
+                panel.appendChild(btn);
+            });
+            updateUI();
+        }
+
+        /** Met à jour la liste des objets dans l'onglet Inventaire. */
+        function updateInventoryUI() {
+            const list = document.getElementById('inventoryList');
+            list.innerHTML = state.inventory.map(item => {
+                // Vérifie si l'objet est actuellement équipé
+                const isEq = Object.values(state.equipment).some(e => e?.id === item.id);
+                const limit = STOCK_LIMITS[item.id];
+                const atMax = limit && item.count >= limit;
+
+                // Génération des caractéristiques affichées
+                let statsHtml = '';
+                if (item.value) statsHtml = `<span class="text-blue-400"> +${item.value} ${item.type==='weapon'?'ATK':'DEF'}</span>`;
+                if (item.heal) statsHtml = `<span class="text-red-400"> +${item.heal} PV</span>`;
+                if (item.restoreFatigue) statsHtml = `<span class="text-purple-400"> Énergie MAX</span>`;
+                if (!statsHtml && item.type === 'consumable') statsHtml = `<span class="text-stone-400"> Consommable</span>`;
+
+
+                return `
+                    <div onclick="useItem('${item.id}')" class="item-card p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:border-stone-700 ${isEq ? 'border-blue-500 bg-blue-900/10' : ''} ${atMax ? 'at-max' : ''}">
+                        <span class="text-2xl">${item.icon}</span>
+                        <div class="flex-grow">
+                            <div class="flex justify-between items-start">
+                                <h3 class="text-[10px] font-bold uppercase text-stone-100">
+                                    ${item.name} ${statsHtml}
+                                </h3>
+                                <span class="text-[9px] font-bold ${atMax ? 'text-red-500' : 'text-stone-500'}">
+                                    ${limit ? `${item.count}` : ''}
+                                    ${limit ? `<span class="text-[7px]"> / ${limit}</span>` : ''}
+                                </span>
+                            </div>
+                            <p class="text-[8px] text-stone-500 italic mt-1">${item.desc}</p>
+                        </div>
+                        ${isEq ? '<span class="text-[8px] bg-blue-500 text-white px-2 py-0.5 rounded font-bold uppercase">Équipé</span>' : ''}
+                    </div>`;
+            }).join('');
+        }
+
+        /** * Affiche une notification temporaire en haut de l'onglet Histoire.
+         * @param {string} msg - Le message à afficher.
+         * @param {boolean} error - Indique si c'est un message d'erreur.
+         */
+        function showNotification(msg, error = false) {
+            const area = document.getElementById('itemNotificationArea');
+            const el = document.createElement('div');
+            el.className = `fade-in p-2 px-3 rounded text-[9px] font-bold uppercase tracking-widest border-l-2 ${error ? 'bg-red-900/20 text-red-400 border-red-500' : 'bg-blue-900/20 text-blue-300 border-blue-500'}`;
+            el.innerText = msg;
+            area.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        }
+
+        /** * Change l'onglet actif.
+         * @param {string} id - L'ID de l'onglet à activer ('story', 'inventory', etc.).
+         */
+        function switchTab(id) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.replace('text-blue-500', 'text-stone-600'));
+            document.getElementById('tab-' + id).classList.add('active');
+            document.getElementById('nav-' + id).classList.replace('text-stone-600', 'text-blue-500');
+            if(id === 'inventory') updateInventoryUI();
+            if(id === 'journal') {
+                document.getElementById('journalList').innerHTML = state.notes.map(n => `<div class="p-3 bg-stone-900 border border-stone-800 rounded text-[10px] italic text-stone-500">${n}</div>`).join('');
+            }
+            if(id === 'settings') updateSaveUI();
+        }
+
+        /** Sauvegarde l'état actuel du jeu dans localStorage. */
+        function saveGame() {
+            localStorage.setItem('ls_save', JSON.stringify(state));
+        }
+
+        /** Met à jour l'interface utilisateur de l'onglet Sauvegarde. */
+        function updateSaveUI() {
+            const list = document.getElementById('saveList');
+            const hasSave = localStorage.getItem('ls_save');
+            list.innerHTML = hasSave ? `
+                <div class="p-4 bg-stone-900 rounded-lg flex justify-between items-center border border-stone-800">
+                    <span class="text-[10px] font-bold uppercase">Sauvegarde Automatique</span>
+                    <button onclick="loadGame()" class="text-blue-400 text-[10px] font-bold uppercase">Charger</button>
+                </div>` : '<p class="text-[10px] text-stone-600 text-center">Aucune sauvegarde trouvée</p>';
+        }
+
+        /** Charge l'état du jeu depuis localStorage. */
+        function loadGame() {
+            const saved = localStorage.getItem('ls_save');
+            if(saved) {
+                state = JSON.parse(saved);
+                renderStep(state.currentStep);
+                switchTab('story');
+            }
+        }
+        
+        // --- Custom Modal Implementation (Replaces confirm()) ---
+        let currentConfirmAction = null;
+
+        /** * Affiche la modale de confirmation.
+         * @param {string} message - Message à afficher.
+         * @param {Function} confirmAction - Fonction à exécuter si l'utilisateur confirme.
+         */
+        function showConfirmationModal(message, confirmAction) {
+            document.getElementById('modalMessage').innerText = message;
+            currentConfirmAction = confirmAction;
+            document.getElementById('customModal').classList.remove('hidden');
+        }
+
+        /**
+         * Gère la fermeture de la modale.
+         * @param {boolean} confirmed - Vrai si l'action a été confirmée.
+         */
+        function closeModal(confirmed) {
+            document.getElementById('customModal').classList.add('hidden');
+            if (confirmed && currentConfirmAction) {
+                currentConfirmAction();
+            }
+            currentConfirmAction = null;
+        }
+
+        /** Gère le clic sur le bouton Confirmer de la modale. */
+        function modalConfirmHandler() {
+            closeModal(true);
+        }
+        // --- Fin Custom Modal ---
+
+        /** Utilise la modale custom pour demander la confirmation de l'effacement. */
+        function confirmReset() {
+            showConfirmationModal("Êtes-vous sûr de vouloir effacer toute votre progression ? Cette action est irréversible.", () => {
+                localStorage.removeItem('ls_save');
+                // Recharger la page après effacement
+                location.reload(); 
+            });
+        }
+        
+        // Initialisation à l'ouverture de la fenêtre
+        window.onload = () => {
+            // Initialisation du graphique de santé
+            const ctx = document.getElementById('healthMiniChart').getContext('2d');
+            healthChart = new Chart(ctx, { 
+                type: 'doughnut', 
+                data: { datasets: [{ data: [100, 0], backgroundColor: ['#991b1b', '#1c1917'], borderWidth: 0 }] }, 
+                options: { cutout: '85%', plugins: { legend: { display: false }, tooltip: { enabled: false } } } 
+            });
+            
+            // Tentative de chargement de la sauvegarde
+            const saved = localStorage.getItem('ls_save');
+            if(saved) state = JSON.parse(saved);
+            
+            // Démarrage du jeu
+            renderStep(state.currentStep);
+            updateUI(); // S'assurer que les stats sont affichées
+        };
+    </script>
+</body>
+</html>
+
+
