@@ -28,13 +28,13 @@
         h1, h2, .fantasy-font { font-family: 'Cinzel', serif; }
         .story-text { font-family: 'Lora', serif; line-height: 1.8; }
 
-        /* Correction du scroll : on permet au contenu de défiler sous le header fixe */
+        /* Correction globale du scroll pour tous les onglets */
         .tab-content { 
             display: none; 
-            height: calc(100vh - 80px - 70px); /* Hauteur moins Header et Nav */
+            height: calc(100vh - 85px - 75px); /* Header (~85px) + Nav (~75px) */
             overflow-y: auto; 
             -webkit-overflow-scrolling: touch; 
-            padding-bottom: 40px;
+            padding-bottom: 2rem;
         }
         .tab-content.active { display: block; }
 
@@ -78,7 +78,7 @@
 <body class="bg-stone-950">
 
     <!-- HEADER: ÉTAT DU PERSONNAGE -->
-    <header class="bg-stone-900/90 border-b border-stone-800 p-4 flex justify-between items-center z-20 backdrop-blur-md sticky top-0">
+    <header class="bg-stone-900/95 border-b border-stone-800 p-4 flex justify-between items-center z-20 backdrop-blur-md">
         <div class="flex items-center space-x-4">
             <div class="relative w-14 h-14">
                 <canvas id="healthMiniChart"></canvas>
@@ -106,14 +106,15 @@
         </div>
     </header>
 
-    <main class="flex-grow relative">
-        <!-- ONGLET: AVENTURE -->
+    <main class="flex-grow relative overflow-hidden">
+        <!-- ONGLET: AVENTURE (CORRIGÉ POUR LE SCROLL) -->
         <div id="tab-story" class="tab-content active p-6">
             <div class="flex justify-between items-center mb-6 border-b border-stone-800 pb-2">
                 <span id="currentLocationTitle" class="text-[10px] text-stone-400 uppercase tracking-widest font-bold italic"></span>
                 <span class="text-[8px] px-2 py-0.5 bg-stone-800 rounded text-stone-600 font-bold uppercase">Chroniques</span>
             </div>
             
+            <!-- ÉQUIPEMENT RAPIDE -->
             <div class="grid grid-cols-3 gap-3 mb-8">
                 <div class="equipment-slot p-2 flex flex-col items-center justify-center min-h-[100px]" id="ui-slot-rightHand">
                     <span class="text-[7px] text-stone-500 uppercase font-bold mb-1">Arme</span>
@@ -122,7 +123,7 @@
                     <span class="text-[7px] font-bold text-blue-400" id="stat-rightHand"></span>
                 </div>
                 <div class="equipment-slot p-2 flex flex-col items-center justify-center min-h-[100px]" id="ui-slot-leftHand">
-                    <span class="text-[7px] text-stone-500 uppercase font-bold mb-1">Bouclier</span>
+                    <span class="text-[7px] text-stone-500 uppercase font-bold mb-1">Gauche</span>
                     <span class="text-2xl mb-1" id="icon-leftHand">🛡️</span>
                     <p class="text-[9px] text-stone-200 font-bold text-center leading-tight mb-1" id="name-leftHand">Vide</p>
                     <span class="text-[7px] font-bold text-red-400" id="stat-leftHand"></span>
@@ -135,11 +136,18 @@
                 </div>
             </div>
 
+            <!-- NOTIFICATIONS ET HISTOIRE -->
             <div id="itemNotificationArea" class="mb-4 space-y-2"></div>
-            <div id="storyLog" class="space-y-6"></div>
+            
+            <div id="storyLog" class="space-y-6">
+                <!-- Le texte de l'histoire s'insère ici -->
+            </div>
 
-            <div class="fixed bottom-24 left-0 right-0 px-6 z-10">
-                <div id="actionPanel" class="max-w-md mx-auto flex flex-col gap-2"></div>
+            <!-- PANNEAU D'ACTIONS (DÉPLACÉ DANS LE FLUX DE SCROLL) -->
+            <div class="mt-8 mb-10">
+                <div id="actionPanel" class="max-w-md mx-auto flex flex-col gap-3">
+                    <!-- Les boutons d'actions s'insèrent ici -->
+                </div>
             </div>
         </div>
 
@@ -148,10 +156,10 @@
             <div class="sticky top-0 bg-stone-950 z-10 pb-4">
                 <div class="flex justify-between items-center border-b border-stone-800 pb-3">
                     <h2 class="text-stone-500 text-[10px] font-bold uppercase tracking-[0.5em]">Inventaire</h2>
-                    <span class="text-[8px] text-stone-600 font-bold uppercase">Capacité Limitée</span>
+                    <span class="text-[8px] text-stone-600 font-bold uppercase">Sac de voyage</span>
                 </div>
             </div>
-            <div id="inventoryList" class="space-y-3"></div>
+            <div id="inventoryList" class="space-y-3 mt-4"></div>
         </div>
 
         <!-- ONGLET: JOURNAL -->
@@ -171,7 +179,7 @@
     </main>
 
     <!-- NAVIGATION -->
-    <nav class="bg-stone-900 border-t border-stone-800 flex justify-around items-center py-4 z-30 fixed bottom-0 left-0 right-0">
+    <nav class="bg-stone-900 border-t border-stone-800 flex justify-around items-center py-4 z-30">
         <button onclick="switchTab('story')" class="nav-item flex flex-col items-center text-blue-500" id="nav-story">
             <span class="text-xl">🧭</span>
             <span class="text-[8px] font-bold uppercase mt-1">Monde</span>
@@ -204,34 +212,23 @@
             fatigue: 0,
             equipment: { rightHand: null, leftHand: null, armor: null },
             inventory: [
-                { id: 'fiole_rouge', name: "Fiole de Sang", icon: "🧪", type: "consumable", count: 3, heal: 100, desc: "Élixir vital." },
-                { id: 'fiole_verte', name: "Fiole de Rosée", icon: "🧪", type: "consumable", count: 3, restoreFatigue: true, desc: "Infusion revigorante." },
-                { id: 'torch', name: "Torche Bleue", icon: "🔥", type: "consumable", count: 5, desc: "Lumière spectrale." },
-                { id: 'rations', name: "Rations Sèches", icon: "🍞", type: "consumable", count: 5, heal: 30, desc: "Vivres de voyage." },
+                { id: 'fiole_rouge', name: "Fiole de Sang", icon: "🧪", type: "consumable", count: 2, heal: 100, desc: "Élixir vital." },
+                { id: 'fiole_verte', name: "Fiole de Rosée", icon: "🧪", type: "consumable", count: 1, restoreFatigue: true, desc: "Infusion revigorante." },
+                { id: 'rations', name: "Rations Sèches", icon: "🍞", type: "consumable", count: 3, heal: 30, desc: "Vivres de voyage." },
                 { id: 'rusty_blade', name: "Lame de Garde", icon: "⚔️", type: "weapon", value: 12, desc: "Acier marqué par le temps." },
-                { id: 'leather_armor', name: "Cuir Bouilli", icon: "🛡️", type: "armor", value: 4, desc: "Souple et robuste." },
-                { id: 'round_shield', name: "Bouclier Rond", icon: "🛡️", type: "offhand", value: 8, desc: "Bois cerclé de fer." }
+                { id: 'leather_armor', name: "Cuir Bouilli", icon: "🛡️", type: "armor", value: 4, desc: "Souple et robuste." }
             ],
             notes: ["Réveil près des quais..."],
             currentStep: 'port_entry'
         };
 
         let state = JSON.parse(JSON.stringify(INITIAL_STATE));
-
-        function getThreat(baseAtk) {
-            const power = (state.equipment.rightHand?.value || 0) + 
-                          (state.equipment.leftHand?.value || 0) + 
-                          (state.equipment.armor?.value || 0);
-            return {
-                atk: Math.floor(baseAtk + (power * 0.45)),
-                hp: Math.floor(60 + (power * 1.5))
-            };
-        }
+        let healthChart = null;
 
         const storyData = {
             port_entry: {
                 title: "Quais de Port-Sable",
-                text: "Les eaux de la baie sont immobiles, noires comme de l'encre renversée sous un ciel sans lune. Une brume épaisse rampe sur les pavés disjoints, portant l'odeur de la pourriture noble et de l'iode. Devant une cabane de bois flotté, **Elias le Pêcheur** recoud un filet dont les mailles semblent capturer les murmures du vent.",
+                text: "Les eaux de la baie sont immobiles, noires comme de l'encre renversée sous un ciel sans lune. Une brume épaisse rampe sur les pavés disjoints, portant l'odeur de la pourriture noble et de l'iode. Devant une cabane de bois flotté, **Elias le Pêcheur** recoud un filet dont les mailles semblent capturer les murmures du vent. Il semble avoir beaucoup à dire sur les dangers qui rôdent au-delà des murs de la ville.",
                 actions: [
                     { label: "Parler à Elias", next: 'elias_talk', icon: "👤" },
                     { label: "Aller au Marché Noir", next: 'black_market', icon: "🏺" },
@@ -240,7 +237,7 @@
             },
             elias_talk: {
                 title: "Conseils d'un Vieil Homme",
-                text: "Elias ne lève pas les yeux de son ouvrage. « Les Sombres-lianes qui infestent la route du Sud ont appris à craindre l'acier, étranger. Plus votre lame est tranchante, plus leur écorce s'endurcit. Ne négligez pas vos torches ; l'ombre n'aime pas être révélée. »",
+                text: "Elias ne lève pas les yeux de son ouvrage. « Les Sombres-lianes qui infestent la route du Sud ont appris à craindre l'acier, étranger. Plus votre lame est tranchante, plus leur écorce s'endurcit. Ne négligez pas vos torches ; l'ombre n'aime pas être révélée. Restez sur vos gardes, car le monde a changé depuis votre dernier passage. »",
                 actions: [
                     { label: "Lui donner 5 pièces", next: 'elias_bless', cost: 5, icon: "🪙" },
                     { label: "Retourner aux quais", next: 'port_entry', icon: "↩️" }
@@ -248,16 +245,15 @@
             },
             elias_bless: {
                 title: "Geste de Gratitude",
-                text: "Elias sort une petite fiole de sa besace. « Prenez ceci. Un reste de rosée matinale. Ça calme les membres fatigués. »",
+                text: "Elias sort une petite fiole de sa besace. « Prenez ceci. Un reste de rosée matinale. Ça calme les membres fatigués et redonne du cœur à l'ouvrage. »",
                 actions: [{ label: "Continuer", next: 'port_entry', icon: "🧭" }],
                 onEnter: () => {
-                    const added = addItem({ id: 'fiole_verte', name: "Fiole de Rosée", icon: "🧪", type: "consumable", count: 1, restoreFatigue: true, desc: "Infusion revigorante." });
-                    if(!added) state.gold += 5;
+                    addItem({ id: 'fiole_verte', name: "Fiole de Rosée", icon: "🧪", type: "consumable", count: 1, restoreFatigue: true, desc: "Infusion revigorante." });
                 }
             },
             black_market: {
                 title: "Le Bazar des Ombres",
-                text: "Caché entre deux entrepôts en ruine, le marché bourdonne d'une activité illicite. **Maître Silas**, un homme au visage masqué de bandages, expose des lames d'un noir mat. Plus loin, **Kaelen la Chasseuse** nettoie ses pièges avec une précision de chirurgien.",
+                text: "Caché entre deux entrepôts en ruine, le marché bourdonne d'une activité illicite. Les étals débordent de curiosités et d'objets aux origines douteuses. Maître Silas vous observe depuis son coin sombre, entouré d'armes qui semblent murmurer entre elles.",
                 actions: [
                     { label: "Maître Silas (Armes)", next: 'silas_shop', icon: "⚔️" },
                     { label: "Acheter des Vivres (10g)", next: 'buy_food', cost: 10, icon: "🍞" },
@@ -266,25 +262,24 @@
             },
             silas_shop: {
                 title: "L'Arsenal de Silas",
-                text: "Silas fait glisser une dague sur le velours. « L'acier de Port-Sable est trempé dans le regret. Choisissez bien. »",
+                text: "Silas fait glisser une dague sur le velours. « L'acier de Port-Sable est trempé dans le regret. Choisissez bien, car une fois la porte franchie, il n'y a pas de retour. »",
                 actions: [
-                    { label: "Épée Lourde (35g)", next: 'buy_sword', cost: 35, icon: "🗡️" },
+                    { label: "Épée de Silas (35g)", next: 'buy_sword', cost: 35, icon: "🗡️" },
                     { label: "Bouclier d'Apparat (30g)", next: 'buy_shield', cost: 30, icon: "🛡️" },
                     { label: "Retourner", next: 'black_market', icon: "↩️" }
                 ]
             },
             buy_food: {
                 title: "Ravitaillement",
-                text: "Le marchand vous tend un paquet de viandes séchées.",
+                text: "Le marchand vous tend un paquet de viandes séchées et de pain dur. C'est peu, mais cela suffira pour quelques jours.",
                 actions: [{ label: "Retourner", next: 'black_market', icon: "↩️" }],
                 onEnter: () => {
-                    const added = addItem({ id: 'rations', name: "Rations Sèches", icon: "🍞", type: "consumable", count: 1, heal: 30, desc: "Vivres de voyage." });
-                    if(!added) state.gold += 10;
+                    addItem({ id: 'rations', name: "Rations Sèches", icon: "🍞", type: "consumable", count: 1, heal: 30, desc: "Vivres de voyage." });
                 }
             },
             buy_sword: {
                 title: "Nouvelle Arme",
-                text: "Vous sentez le poids réconfortant de l'acier neuf.",
+                text: "Vous sentez le poids réconfortant de l'acier neuf. Silas sourit, ou du moins c'est ce que ses yeux plissés suggèrent.",
                 actions: [{ label: "Continuer", next: 'black_market', icon: "↩️" }],
                 onEnter: () => {
                     addItem({ id: 'heavy_sword', name: "Épée de Silas", icon: "⚔️", type: "weapon", value: 25, desc: "Forgée dans l'ombre." });
@@ -292,7 +287,7 @@
             },
             buy_shield: {
                 title: "Nouveau Bouclier",
-                text: "Un bouclier massif, gravé d'emblèmes oubliés.",
+                text: "Un bouclier massif, gravé d'emblèmes oubliés qui semblent briller d'une lueur intérieure.",
                 actions: [{ label: "Continuer", next: 'black_market', icon: "↩️" }],
                 onEnter: () => {
                     addItem({ id: 'ceremonial_shield', name: "Écu d'Apparat", icon: "🛡️", type: "offhand", value: 15, desc: "Lourd et ornementé." });
@@ -300,7 +295,7 @@
             },
             south_road: {
                 title: "La Route du Sud",
-                text: "Le chemin s'enfonce dans une végétation maladive. Une silhouette se détache de l'ombre d'un chêne mort.",
+                text: "Le chemin s'enfonce dans une végétation maladive. Les arbres se tordent comme s'ils souffraient, et le silence est seulement rompu par le craquement des branches sèches. Une silhouette se détache de l'ombre d'un chêne mort, barrant le passage.",
                 actions: [
                     { label: "Combattre l'Apparition", next: 'fight_shadow', icon: "⚔️" },
                     { label: "Fuir vers le port", next: 'port_entry', icon: "🏃" }
@@ -308,16 +303,19 @@
             },
             fight_shadow: {
                 title: "L'Ombre S'adapte",
-                text: "La créature pousse un cri strident. Son corps se durcit au contact de votre lumière.",
+                text: "La créature pousse un cri strident. Son corps se durcit au contact de votre présence, transformant l'air ambiant en un froid glacial.",
                 actions: [
-                    { label: "Victoire", next: 'port_entry', icon: "🏆" }
+                    { label: "Victoire (Retourner)", next: 'port_entry', icon: "🏆" }
                 ],
                 onEnter: () => {
-                    const enemy = getThreat(18);
+                    const power = (state.equipment.rightHand?.value || 0) + 
+                                  (state.equipment.leftHand?.value || 0) + 
+                                  (state.equipment.armor?.value || 0);
+                    const enemyAtk = Math.floor(18 + (power * 0.45));
                     const def = (state.equipment.armor?.value || 0) + (state.equipment.leftHand?.value || 0);
-                    const dmg = Math.max(8, enemy.atk - def);
+                    const dmg = Math.max(8, enemyAtk - def);
                     state.hp -= dmg;
-                    showNotification(`L'Ombre (ATK ${enemy.atk}) vous blesse de ${dmg} PV.`);
+                    showNotification(`L'Ombre frappe ! -${dmg} PV.`);
                 }
             }
         };
@@ -329,10 +327,9 @@
             if (limit !== undefined) {
                 const currentCount = existing ? existing.count : 0;
                 if (currentCount >= limit) {
-                    showNotification(`Stock MAX atteint pour : ${item.name}`, true);
+                    showNotification(`Sac plein pour : ${item.name}`, true);
                     return false; 
                 }
-                
                 if (existing) {
                     existing.count = Math.min(limit, existing.count + (item.count || 1));
                 } else {
@@ -343,7 +340,6 @@
             }
             
             showNotification(`+ ${item.name}`);
-            updateInventoryUI();
             updateUI();
             return true;
         }
@@ -354,18 +350,14 @@
 
             if (['weapon', 'armor', 'offhand'].includes(item.type)) {
                 let slot = item.type === 'weapon' ? 'rightHand' : (item.type === 'armor' ? 'armor' : 'leftHand');
-                
                 if (state.equipment[slot]?.id === item.id) {
                     state.equipment[slot] = null;
-                    showNotification(`${item.name} retiré`);
                 } else {
                     state.equipment[slot] = item;
-                    showNotification(`${item.name} équipé`);
                 }
             } else {
                 if (item.heal) state.hp = Math.min(100, (item.heal === 100 ? 100 : state.hp + item.heal));
                 if (item.restoreFatigue) state.fatigue = 0;
-                
                 item.count--;
                 if (item.count <= 0) state.inventory.splice(index, 1);
             }
@@ -373,8 +365,6 @@
             updateInventoryUI();
             saveGame();
         }
-
-        let healthChart = null;
 
         function updateUI() {
             document.getElementById('hpValue').innerText = Math.max(0, state.hp);
@@ -408,6 +398,9 @@
             state.currentStep = stepId;
             if (step.onEnter) step.onEnter();
 
+            // Reset du scroll vers le haut quand on change de lieu
+            document.getElementById('tab-story').scrollTop = 0;
+
             document.getElementById('currentLocationTitle').innerText = step.title;
             document.getElementById('storyLog').innerHTML = `
                 <div class="fade-in bg-stone-900/50 p-6 rounded-xl border border-stone-800">
@@ -419,7 +412,7 @@
             step.actions.forEach(act => {
                 const canAfford = !act.cost || state.gold >= act.cost;
                 const btn = document.createElement('button');
-                btn.className = `action-btn p-4 rounded-xl flex justify-between items-center text-[9px] font-bold uppercase tracking-widest ${!canAfford ? 'disabled' : ''}`;
+                btn.className = `action-btn p-5 rounded-xl flex justify-between items-center text-[9px] font-bold uppercase tracking-widest ${!canAfford ? 'disabled' : ''}`;
                 btn.innerHTML = `<span>${act.icon} ${act.label} ${act.cost ? `(${act.cost}g)` : ''}</span> <span>→</span>`;
                 btn.onclick = () => {
                     if (act.cost) state.gold -= act.cost;
@@ -438,14 +431,13 @@
                 const limit = STOCK_LIMITS[item.id];
                 const atMax = limit && item.count >= limit;
 
-                // Génération des caractéristiques affichées
                 let statsHtml = '';
                 if (item.value) statsHtml = `<span class="text-blue-400"> +${item.value} ${item.type==='weapon'?'ATK':'DEF'}</span>`;
                 if (item.heal) statsHtml = `<span class="text-red-400"> +${item.heal} PV</span>`;
                 if (item.restoreFatigue) statsHtml = `<span class="text-purple-400"> Énergie MAX</span>`;
 
                 return `
-                    <div onclick="useItem('${item.id}')" class="item-card p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:border-stone-700 ${isEq ? 'border-blue-500 bg-blue-900/10' : ''} ${atMax ? 'at-max' : ''}">
+                    <div onclick="useItem('${item.id}')" class="item-card p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:border-stone-700 ${isEq ? 'border-blue-500 bg-blue-900/10' : ''}">
                         <span class="text-2xl">${item.icon}</span>
                         <div class="flex-grow">
                             <div class="flex justify-between items-start">
@@ -493,7 +485,7 @@
             const hasSave = localStorage.getItem('ls_save');
             list.innerHTML = hasSave ? `
                 <div class="p-4 bg-stone-900 rounded-lg flex justify-between items-center border border-stone-800">
-                    <span class="text-[10px] font-bold uppercase">Sauvegarde Automatique</span>
+                    <span class="text-[10px] font-bold uppercase">Sauvegarde Auto</span>
                     <button onclick="loadGame()" class="text-blue-400 text-[10px] font-bold uppercase">Charger</button>
                 </div>` : '<p class="text-[10px] text-stone-600 text-center">Aucune sauvegarde trouvée</p>';
         }
@@ -508,7 +500,7 @@
         }
 
         function confirmReset() {
-            if(confirm("Tout effacer ?")) {
+            if(confirm("Effacer toute la progression ?")) {
                 localStorage.removeItem('ls_save');
                 location.reload();
             }
