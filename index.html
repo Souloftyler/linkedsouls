@@ -15,7 +15,6 @@
             --blood: #991b1b;
         }
 
-        /* Fix pour la hauteur réelle sur mobile */
         html, body {
             height: 100%;
             margin: 0;
@@ -32,9 +31,8 @@
         }
         
         h1, h2, .fantasy-font { font-family: 'Cinzel', serif; }
-        .story-text { font-family: 'Lora', serif; line-height: 1.8; }
+        .story-text { font-family: 'Lora', serif; line-height: 1.7; }
 
-        /* Conteneur principal flexible */
         main {
             flex: 1;
             position: relative;
@@ -43,68 +41,71 @@
             flex-direction: column;
         }
 
-        /* Zone de défilement pour les onglets */
         .tab-content { 
             display: none; 
             flex: 1;
             overflow-y: auto; 
-            -webkit-overflow-scrolling: touch; /* Scroll fluide iOS */
-            padding-bottom: 3rem;
+            -webkit-overflow-scrolling: touch;
+            padding: 1.5rem;
             touch-action: pan-y;
         }
-        .tab-content.active { display: block; }
+        .tab-content.active { display: flex; flex-direction: column; }
 
-        .fade-in { animation: fadeIn 0.6s ease-out forwards; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* Le cadre unique pour la narration et les actions */
+        .story-container {
+            background: rgba(28, 25, 23, 0.6);
+            border: 1px solid rgba(68, 64, 60, 0.4);
+            border-radius: 1rem;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
         .action-btn {
-            background: linear-gradient(135deg, #1c1917 0%, #0c0a09 100%);
-            border: 1px solid #44403c;
-            transition: all 0.3s ease;
+            background: rgba(12, 10, 9, 0.4);
+            border-top: 1px solid rgba(68, 64, 60, 0.3);
+            transition: all 0.2s ease;
             text-align: left;
             width: 100%;
+            padding: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
         }
-        .action-btn:active { transform: scale(0.98); background: #1c1917; }
-        .action-btn.disabled { opacity: 0.4; filter: grayscale(1); pointer-events: none; }
+        .action-btn:active { background: rgba(59, 130, 246, 0.1); color: var(--ethereal-blue); }
+        .action-btn.disabled { opacity: 0.3; pointer-events: none; }
 
         .equipment-slot {
-            background: rgba(28, 25, 23, 0.9);
+            background: rgba(28, 25, 23, 0.8);
             border: 1px solid rgba(68, 64, 60, 0.5);
-            border-radius: 8px;
-            transition: all 0.3s;
+            border-radius: 0.5rem;
         }
-        .equipment-slot.active { border-color: var(--ethereal-blue); box-shadow: 0 0 15px rgba(59, 130, 246, 0.1); }
+        .equipment-slot.active { border-color: var(--ethereal-blue); }
 
-        .item-card {
-            background: linear-gradient(to right, #1c1917, #0c0a09);
-            border: 1px solid #292524;
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: #0c0a09; }
-        ::-webkit-scrollbar-thumb { background: #44403c; border-radius: 10px; }
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-thumb { background: #44403c; }
     </style>
 </head>
 <body class="bg-stone-950">
 
-    <!-- HEADER -->
+    <!-- HEADER STATS -->
     <header class="flex-none bg-stone-900/95 border-b border-stone-800 p-4 flex justify-between items-center z-20 backdrop-blur-md">
-        <div class="flex items-center space-x-4">
-            <div class="relative w-12 h-12">
+        <div class="flex items-center space-x-3">
+            <div class="relative w-10 h-10">
                 <canvas id="healthMiniChart"></canvas>
-                <div class="absolute inset-0 flex flex-col items-center justify-center">
-                    <span class="text-[10px] font-bold text-red-500" id="hpValue">100</span>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <span class="text-[9px] font-bold text-red-500" id="hpValue">100</span>
                 </div>
             </div>
             <div>
-                <h1 class="text-stone-100 text-[9px] font-bold uppercase tracking-[0.2em]">Âme Liée</h1>
-                <div class="flex items-center space-x-3 mt-1">
-                    <span class="text-[9px] text-blue-400 font-bold">⚔️ <span id="header-stat-atk">0</span></span>
-                    <span class="text-[9px] text-red-400 font-bold">🛡️ <span id="header-stat-def">0</span></span>
+                <h1 class="text-stone-100 text-[8px] font-bold uppercase tracking-widest">Âme Liée</h1>
+                <div class="flex space-x-2 mt-0.5">
+                    <span class="text-[8px] text-blue-400 font-bold">⚔️ <span id="header-stat-atk">0</span></span>
+                    <span class="text-[8px] text-red-400 font-bold">🛡️ <span id="header-stat-def">0</span></span>
                 </div>
             </div>
         </div>
@@ -113,75 +114,70 @@
                 <span class="text-xs font-bold" id="goldValue">50</span>
                 <span class="text-[10px]">🪙</span>
             </div>
-            <div class="w-16 bg-stone-800 h-1 rounded-full mt-1 border border-stone-700">
-                <div id="fatigueProgress" class="h-full bg-purple-600 transition-all duration-700" style="width: 0%"></div>
+            <div class="w-12 bg-stone-800 h-1 rounded-full mt-1 ml-auto overflow-hidden">
+                <div id="fatigueProgress" class="h-full bg-purple-600 transition-all" style="width: 0%"></div>
             </div>
         </div>
     </header>
 
     <main>
-        <!-- ONGLET: MONDE -->
-        <div id="tab-story" class="tab-content active p-6">
-            <div class="flex justify-between items-center mb-6 border-b border-stone-800 pb-2">
-                <span id="currentLocationTitle" class="text-[10px] text-stone-400 uppercase tracking-widest font-bold italic">Lieu Inconnu</span>
-                <span class="text-[8px] px-2 py-0.5 bg-stone-800 rounded text-stone-600 font-bold uppercase tracking-tighter">Exploration</span>
+        <!-- ONGLET MONDE -->
+        <div id="tab-story" class="tab-content active">
+            <!-- TITRE LIEU -->
+            <div class="flex justify-between items-center mb-4">
+                <span id="currentLocationTitle" class="text-[9px] text-stone-500 uppercase font-bold tracking-[0.2em]">Chargement...</span>
+                <span id="fatigueText" class="text-[7px] text-stone-600 uppercase font-bold">Fatigue 0%</span>
             </div>
             
-            <!-- ÉQUIPEMENT -->
-            <div class="grid grid-cols-3 gap-2 mb-8">
-                <div class="equipment-slot p-2 flex flex-col items-center justify-center min-h-[90px]" id="ui-slot-rightHand">
-                    <span class="text-[7px] text-stone-500 uppercase font-bold mb-1">Arme</span>
-                    <span class="text-xl mb-1" id="icon-rightHand">⚔️</span>
-                    <p class="text-[8px] text-stone-200 font-bold text-center leading-tight truncate w-full" id="name-rightHand">Vide</p>
+            <!-- ÉQUIPEMENT RAPIDE (Plus compact) -->
+            <div class="grid grid-cols-3 gap-2 mb-4 flex-none">
+                <div class="equipment-slot p-2 flex flex-col items-center" id="ui-slot-rightHand">
+                    <span class="text-[14px]" id="icon-rightHand">⚔️</span>
+                    <p class="text-[7px] text-stone-400 mt-1 truncate w-full text-center font-bold uppercase" id="name-rightHand">Main D.</p>
                 </div>
-                <div class="equipment-slot p-2 flex flex-col items-center justify-center min-h-[90px]" id="ui-slot-leftHand">
-                    <span class="text-[7px] text-stone-500 uppercase font-bold mb-1">Gauche</span>
-                    <span class="text-xl mb-1" id="icon-leftHand">🛡️</span>
-                    <p class="text-[8px] text-stone-200 font-bold text-center leading-tight truncate w-full" id="name-leftHand">Vide</p>
+                <div class="equipment-slot p-2 flex flex-col items-center" id="ui-slot-leftHand">
+                    <span class="text-[14px]" id="icon-leftHand">🛡️</span>
+                    <p class="text-[7px] text-stone-400 mt-1 truncate w-full text-center font-bold uppercase" id="name-leftHand">Main G.</p>
                 </div>
-                <div class="equipment-slot p-2 flex flex-col items-center justify-center min-h-[90px]" id="ui-slot-armor">
-                    <span class="text-[7px] text-stone-500 uppercase font-bold mb-1">Armure</span>
-                    <span class="text-xl mb-1" id="icon-armor">👕</span>
-                    <p class="text-[8px] text-stone-200 font-bold text-center leading-tight truncate w-full" id="name-armor">Vide</p>
+                <div class="equipment-slot p-2 flex flex-col items-center" id="ui-slot-armor">
+                    <span class="text-[14px]" id="icon-armor">👕</span>
+                    <p class="text-[7px] text-stone-400 mt-1 truncate w-full text-center font-bold uppercase" id="name-armor">Corps</p>
                 </div>
             </div>
 
-            <div id="itemNotificationArea" class="mb-4 space-y-2"></div>
+            <div id="itemNotificationArea" class="mb-2 space-y-1"></div>
             
-            <!-- CONTENU NARRATIF -->
-            <div id="storyLog" class="space-y-6"></div>
-
-            <!-- ACTIONS (Incluses dans le scroll) -->
-            <div class="mt-8 pb-12">
-                <div id="actionPanel" class="flex flex-col gap-3">
+            <!-- LE CADRE UNIQUE SCROLLABLE -->
+            <div class="story-container flex-none mb-6">
+                <!-- Texte de l'histoire -->
+                <div id="storyLog" class="p-5 story-text text-stone-300 text-sm italic border-b border-stone-800/30">
+                    <!-- Texte ici -->
+                </div>
+                
+                <!-- Liste des actions fusionnée -->
+                <div id="actionPanel" class="bg-stone-900/20">
                     <!-- Boutons ici -->
                 </div>
             </div>
+            
+            <!-- Espace supplémentaire pour éviter que le scroll soit bloqué par la nav -->
+            <div class="h-10 flex-none"></div>
         </div>
 
-        <!-- ONGLET: SAC -->
-        <div id="tab-inventory" class="tab-content p-6">
-            <h2 class="text-stone-500 text-[10px] font-bold uppercase tracking-[0.5em] mb-4 border-b border-stone-800 pb-2">Inventaire</h2>
-            <div id="inventoryList" class="space-y-3"></div>
+        <!-- AUTRES ONGLETS -->
+        <div id="tab-inventory" class="tab-content">
+            <h2 class="text-stone-500 text-[10px] font-bold uppercase mb-4 tracking-widest border-b border-stone-800 pb-2">Inventaire</h2>
+            <div id="inventoryList" class="space-y-2"></div>
         </div>
 
-        <!-- ONGLET: JOURNAL -->
-        <div id="tab-journal" class="tab-content p-6">
-            <h2 class="text-stone-500 text-[10px] font-bold uppercase tracking-[0.5em] mb-4 border-b border-stone-800 pb-2">Notes</h2>
-            <div id="journalList" class="space-y-3"></div>
-        </div>
-
-        <!-- ONGLET: MENU -->
-        <div id="tab-settings" class="tab-content p-6">
-            <h2 class="text-stone-500 text-[10px] font-bold uppercase tracking-[0.5em] mb-4 border-b border-stone-800 pb-2">Système</h2>
-            <button onclick="confirmReset()" class="w-full py-4 border border-red-900/40 text-red-500 text-[9px] font-bold uppercase rounded-lg">
-                Effacer la progression
-            </button>
+        <div id="tab-journal" class="tab-content">
+            <h2 class="text-stone-500 text-[10px] font-bold uppercase mb-4 tracking-widest border-b border-stone-800 pb-2">Notes</h2>
+            <div id="journalList" class="space-y-2"></div>
         </div>
     </main>
 
-    <!-- NAVIGATION -->
-    <nav class="flex-none bg-stone-900 border-t border-stone-800 flex justify-around items-center py-3 z-30">
+    <!-- NAVIGATION BASSE -->
+    <nav class="flex-none bg-stone-900 border-t border-stone-800 flex justify-around items-center py-2 pb-4 z-30">
         <button onclick="switchTab('story')" class="nav-item flex flex-col items-center text-blue-500" id="nav-story">
             <span class="text-xl">🧭</span>
             <span class="text-[8px] font-bold uppercase mt-1">Monde</span>
@@ -194,72 +190,55 @@
             <span class="text-xl">📜</span>
             <span class="text-[8px] font-bold uppercase mt-1">Notes</span>
         </button>
-        <button onclick="switchTab('settings')" class="nav-item flex flex-col items-center text-stone-600" id="nav-settings">
-            <span class="text-xl">⚙️</span>
-            <span class="text-[8px] font-bold uppercase mt-1">Menu</span>
-        </button>
     </nav>
 
     <script>
-        // --- DONNÉES ET LOGIQUE ---
-        const STOCK_LIMITS = { 'fiole_rouge': 3, 'fiole_verte': 3, 'rations': 5 };
-
         let state = {
             hp: 100, gold: 50, fatigue: 0,
             equipment: { rightHand: null, leftHand: null, armor: null },
             inventory: [
-                { id: 'fiole_rouge', name: "Fiole de Sang", icon: "🧪", type: "consumable", count: 2, heal: 40, desc: "Soin vital." },
-                { id: 'rations', name: "Rations", icon: "🍞", type: "consumable", count: 2, heal: 15, desc: "Vivres simples." }
+                { id: 'fiole_rouge', name: "Fiole de Sang", icon: "🧪", type: "consumable", count: 2, heal: 30, desc: "Restaure un peu de vie." },
+                { id: 'rations', name: "Rations", icon: "🍞", type: "consumable", count: 3, heal: 15, desc: "Nourriture de voyage." }
             ],
-            notes: ["Réveil à Port-Sable."],
+            notes: ["Réveil sur les quais."],
             currentStep: 'port_entry'
         };
 
         const storyData = {
             port_entry: {
                 title: "Quais de Port-Sable",
-                text: "La brume rampe sur les pavés disjoints, portant l'odeur de la pourriture et de l'iode. Devant une cabane de bois flotté, **Elias le Pêcheur** recoud un filet dont les mailles semblent capturer les murmures du vent. Plus loin, le vacarme du Marché Noir résonne contre les murs de pierre suintants. La Route du Sud, quant à elle, s'enfonce dans une pénombre inquiétante, là où peu osent s'aventurer sans une bonne escorte.",
+                text: "La brume est si épaisse qu'on ne distingue plus l'horizon. L'odeur de sel se mêle à celle de la charogne. Devant vous, un vieux pêcheur nommé **Elias** semble surveiller les eaux sombres. Au loin, les lumières du Marché Noir scintillent comme des yeux de prédateurs. C'est ici que tout commence.",
                 actions: [
                     { label: "Parler à Elias", next: 'elias_talk', icon: "👤" },
-                    { label: "Aller au Marché Noir", next: 'black_market', icon: "🏺" },
-                    { label: "Route du Sud", next: 'south_road', icon: "🥾", fatigue: 15 }
+                    { label: "Explorer le Marché Noir", next: 'market', icon: "🏺" },
+                    { label: "Partir vers le Sud", next: 'south', icon: "🥾", fatigue: 10 }
                 ]
             },
             elias_talk: {
                 title: "Conseils d'Elias",
-                text: "« Les Sombres-lianes qui infestent le Sud ont appris à craindre l'acier. Mais l'acier ne suffit pas toujours. Ne négligez pas vos forces ; un homme épuisé est une proie facile. »",
+                text: "« Ne regarde pas trop longtemps dans l'eau, étranger. Ce qui y vit n'aime pas être observé. Prends garde à ta fatigue, elle est plus meurtrière que n'importe quelle lame. »",
                 actions: [
-                    { label: "Demander de l'aide", next: 'elias_gift', cost: 10, icon: "🪙" },
+                    { label: "Remercier et partir", next: 'port_entry', icon: "↩️" }
+                ]
+            },
+            market: {
+                title: "Le Marché Noir",
+                text: "Un dédale d'étals où l'on vend tout ce qui est interdit. L'acier ici est cher, mais fiable.",
+                actions: [
+                    { label: "Dague en Os (30g)", next: 'buy_bone', cost: 30, icon: "🦴" },
                     { label: "Retourner aux quais", next: 'port_entry', icon: "↩️" }
                 ]
             },
-            elias_gift: {
-                title: "Geste de Gratitude",
-                text: "Il vous tend une fiole verte. « C'est de la rosée matinale. Ça calme les membres fatigués. Allez, partez maintenant. »",
-                actions: [{ label: "Continuer", next: 'port_entry', icon: "🧭" }],
-                onEnter: () => addItem({ id: 'fiole_verte', name: "Rosée", icon: "🧪", type: "consumable", count: 1, restoreFatigue: true, desc: "Redonne de l'énergie." })
+            buy_bone: {
+                title: "Nouvelle Arme",
+                text: "Une dague sculptée dans un fémur de créature inconnue. Elle vibre légèrement dans votre main.",
+                actions: [{ label: "Continuer", next: 'market', icon: "🧭" }],
+                onEnter: () => addItem({ id: 'bone_dagger', name: "Dague Os", icon: "🗡️", type: "weapon", value: 12, desc: "Légère et maudite." })
             },
-            black_market: {
-                title: "Le Marché Noir",
-                text: "Un lieu de troc pour ceux qui préfèrent l'anonymat. Maître Silas vend des armes anciennes à prix d'or.",
-                actions: [
-                    { label: "Lame Noire (40g)", next: 'buy_sword', cost: 40, icon: "🗡️" },
-                    { label: "Quitter", next: 'port_entry', icon: "↩️" }
-                ]
-            },
-            buy_sword: {
-                title: "Achat de Lame",
-                text: "L'acier est froid, presque surnaturel.",
-                actions: [{ label: "Retourner", next: 'black_market', icon: "↩️" }],
-                onEnter: () => addItem({ id: 'dark_blade', name: "Lame Noire", icon: "⚔️", type: "weapon", value: 15, desc: "Forgée dans l'ombre." })
-            },
-            south_road: {
+            south: {
                 title: "Route du Sud",
-                text: "La route est bloquée par un spectre. Le combat semble inévitable.",
-                actions: [
-                    { label: "Combattre (-20 PV)", next: 'port_entry', icon: "⚔️" }
-                ],
-                onEnter: () => { state.hp -= 20; updateUI(); }
+                text: "La route est longue. La fatigue commence à peser sur vos épaules alors que vous progressez dans les terres désolées.",
+                actions: [{ label: "Revenir", next: 'port_entry', icon: "↩️" }]
             }
         };
 
@@ -271,6 +250,7 @@
             document.getElementById('header-stat-atk').innerText = state.equipment.rightHand?.value || 0;
             document.getElementById('header-stat-def').innerText = (state.equipment.leftHand?.value || 0) + (state.equipment.armor?.value || 0);
             document.getElementById('fatigueProgress').style.width = state.fatigue + "%";
+            document.getElementById('fatigueText').innerText = `Fatigue ${state.fatigue}%`;
 
             ['rightHand', 'leftHand', 'armor'].forEach(slot => {
                 const item = state.equipment[slot];
@@ -291,24 +271,20 @@
             state.currentStep = stepId;
             if (step.onEnter) step.onEnter();
 
-            const tab = document.getElementById('tab-story');
-            tab.scrollTop = 0; // Reset scroll
+            // Reset scroll interne
+            document.getElementById('tab-story').scrollTop = 0;
 
             document.getElementById('currentLocationTitle').innerText = step.title;
-            document.getElementById('storyLog').innerHTML = `
-                <div class="fade-in bg-stone-900/40 p-5 rounded-xl border border-stone-800/50">
-                    <p class="story-text text-stone-300 text-sm italic">${step.text}</p>
-                </div>`;
+            document.getElementById('storyLog').innerHTML = step.text;
 
             const panel = document.getElementById('actionPanel');
             panel.innerHTML = '';
             step.actions.forEach(act => {
                 const canAfford = !act.cost || state.gold >= act.cost;
                 const btn = document.createElement('button');
-                btn.className = `action-btn p-4 rounded-xl flex justify-between items-center text-[10px] font-bold uppercase tracking-widest ${!canAfford ? 'disabled' : ''}`;
-                btn.innerHTML = `<span>${act.icon} ${act.label} ${act.cost ? `(${act.cost}g)` : ''}</span> <span>→</span>`;
-                btn.onclick = (e) => {
-                    e.preventDefault();
+                btn.className = `action-btn ${!canAfford ? 'disabled' : ''}`;
+                btn.innerHTML = `<span>${act.icon} ${act.label} ${act.cost ? `(${act.cost}g)` : ''}</span> <span>❯</span>`;
+                btn.onclick = () => {
                     if (act.cost) state.gold -= act.cost;
                     if (act.fatigue) state.fatigue = Math.min(100, state.fatigue + act.fatigue);
                     renderStep(act.next);
@@ -319,16 +295,11 @@
         }
 
         function addItem(item) {
-            const limit = STOCK_LIMITS[item.id];
             const existing = state.inventory.find(i => i.id === item.id);
-            if (limit && existing && existing.count >= limit) return false;
-
             if (existing) existing.count++;
             else state.inventory.push({ ...item });
-            
             showNotification(`+ ${item.name}`);
             updateUI();
-            return true;
         }
 
         function useItem(itemId) {
@@ -339,7 +310,6 @@
                 state.equipment[slot] = (state.equipment[slot]?.id === item.id) ? null : item;
             } else {
                 if (item.heal) state.hp = Math.min(100, state.hp + item.heal);
-                if (item.restoreFatigue) state.fatigue = 0;
                 item.count--;
                 if (item.count <= 0) state.inventory.splice(index, 1);
             }
@@ -352,12 +322,15 @@
             list.innerHTML = state.inventory.map(item => {
                 const isEq = Object.values(state.equipment).some(e => e?.id === item.id);
                 return `
-                    <div onclick="useItem('${item.id}')" class="item-card p-4 rounded-xl flex items-center gap-4 border ${isEq ? 'border-blue-500 bg-blue-900/10' : 'border-stone-800'}">
-                        <span class="text-xl">${item.icon}</span>
-                        <div class="flex-grow">
-                            <h3 class="text-[10px] font-bold uppercase text-stone-100">${item.name} ${item.count > 1 ? `(x${item.count})` : ''}</h3>
-                            <p class="text-[8px] text-stone-500 italic">${item.desc}</p>
+                    <div onclick="useItem('${item.id}')" class="p-3 bg-stone-900 rounded-lg flex items-center justify-between border ${isEq ? 'border-blue-500 bg-blue-900/10' : 'border-stone-800'}">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xl">${item.icon}</span>
+                            <div>
+                                <h3 class="text-[9px] font-bold text-stone-100 uppercase">${item.name} ${item.count > 1 ? `x${item.count}` : ''}</h3>
+                                <p class="text-[7px] text-stone-500 italic">${item.desc}</p>
+                            </div>
                         </div>
+                        ${isEq ? '<span class="text-[7px] text-blue-400 font-bold uppercase">Équipé</span>' : ''}
                     </div>`;
             }).join('');
         }
@@ -365,10 +338,10 @@
         function showNotification(msg) {
             const area = document.getElementById('itemNotificationArea');
             const el = document.createElement('div');
-            el.className = "fade-in p-2 bg-blue-900/20 text-blue-300 border-l-2 border-blue-500 text-[9px] font-bold uppercase";
+            el.className = "p-2 bg-blue-900/30 text-blue-300 border-l-2 border-blue-500 text-[8px] font-bold uppercase tracking-widest";
             el.innerText = msg;
             area.appendChild(el);
-            setTimeout(() => el.remove(), 2500);
+            setTimeout(() => el.remove(), 2000);
         }
 
         function switchTab(id) {
@@ -377,10 +350,6 @@
             document.getElementById('tab-' + id).classList.add('active');
             document.getElementById('nav-' + id).classList.replace('text-stone-600', 'text-blue-500');
             if(id === 'inventory') updateInventoryUI();
-        }
-
-        function confirmReset() {
-            if(confirm("Réinitialiser ?")) { localStorage.clear(); location.reload(); }
         }
 
         window.onload = () => {
