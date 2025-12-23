@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINKED SOULS - Dark Fantasy</title>
+    <title>LINKED SOULS - Échos des Ténèbres</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Lora:ital,wght@0,400;0,700;1,400&family=Lato:wght@400;700&display=swap');
 
         :root {
-            --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
             --ethereal-blue: #3b82f6;
             --gold: #fbbf24;
-            --fatigue-color: #a855f7;
+            --blood: #991b1b;
         }
 
         body {
@@ -27,20 +26,22 @@
         }
         
         h1, h2, .fantasy-font { font-family: 'Cinzel', serif; }
-        .story-text { font-family: 'Lora', serif; }
+        .story-text { font-family: 'Lora', serif; line-height: 1.8; }
 
-        .tab-content { display: none; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        /* Correction du scroll : on permet au contenu de défiler sous le header fixe */
+        .tab-content { 
+            display: none; 
+            height: calc(100vh - 80px - 70px); /* Hauteur moins Header et Nav */
+            overflow-y: auto; 
+            -webkit-overflow-scrolling: touch; 
+            padding-bottom: 40px;
+        }
         .tab-content.active { display: block; }
 
-        .fade-in { animation: fadeIn 0.8s ease-out forwards; }
+        .fade-in { animation: fadeIn 0.6s ease-out forwards; }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
-        }
-
-        .bottom-nav {
-            padding-bottom: calc(0.5rem + var(--safe-area-inset-bottom));
-            box-shadow: 0 -10px 40px rgba(0,0,0,1);
         }
 
         .action-btn {
@@ -48,486 +49,481 @@
             border: 1px solid #44403c;
             transition: all 0.3s ease;
             text-align: left;
+            position: relative;
         }
-        .action-btn:hover { border-color: var(--ethereal-blue); background: #1c1917; }
         .action-btn:active { transform: scale(0.98); }
+        .action-btn.disabled { opacity: 0.4; filter: grayscale(1); pointer-events: none; }
 
         .equipment-slot {
-            background: rgba(28, 25, 23, 0.8);
-            border: 1px solid rgba(59, 130, 246, 0.2);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: border-color 0.2s;
+            background: rgba(28, 25, 23, 0.9);
+            border: 1px solid rgba(68, 64, 60, 0.5);
+            border-radius: 8px;
+            transition: all 0.3s;
         }
-        .equipment-slot:hover { border-color: var(--ethereal-blue); }
+        .equipment-slot.active { border-color: var(--ethereal-blue); box-shadow: 0 0 15px rgba(59, 130, 246, 0.1); }
 
         .item-card {
-            cursor: pointer;
-            transition: all 0.2s;
+            background: linear-gradient(to right, #1c1917, #0c0a09);
+            border: 1px solid #292524;
+            transition: border-color 0.3s;
         }
+        .item-card.at-max { border-color: #7f1d1d; }
 
-        .item-notification {
-            border-left: 3px solid var(--ethereal-blue);
-            background: rgba(59, 130, 246, 0.1);
-            animation: slideIn 0.5s ease-out;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #0c0a09; }
+        ::-webkit-scrollbar-thumb { background: #292524; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-stone-950">
 
-    <!-- HEADER GLOBAL -->
-    <header class="bg-stone-900 border-b border-stone-800 p-4 flex justify-between items-center z-10 shadow-2xl">
-        <div class="flex items-center space-x-3">
-            <div class="relative w-12 h-12">
+    <!-- HEADER: ÉTAT DU PERSONNAGE -->
+    <header class="bg-stone-900/90 border-b border-stone-800 p-4 flex justify-between items-center z-20 backdrop-blur-md sticky top-0">
+        <div class="flex items-center space-x-4">
+            <div class="relative w-14 h-14">
                 <canvas id="healthMiniChart"></canvas>
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
-                    <span class="text-[10px] font-bold text-red-700" id="hpValue">100</span>
+                    <span class="text-xs font-bold text-red-500" id="hpValue">100</span>
                 </div>
             </div>
             <div>
-                <h1 class="text-stone-100 text-[11px] font-bold uppercase tracking-[0.4em]">Linked Souls</h1>
+                <h1 class="text-stone-100 text-[10px] font-bold uppercase tracking-[0.3em]">Âme Liée</h1>
                 <div class="flex items-center space-x-3 mt-1">
-                    <span class="text-[9px] font-bold text-blue-400">⚔️ <span id="header-stat-atk">0</span></span>
-                    <span class="text-[9px] font-bold text-red-400">🛡️ <span id="header-stat-def">0</span></span>
+                    <span class="flex items-center text-[10px] text-blue-400 font-bold">⚔️ <span id="header-stat-atk" class="ml-1">0</span></span>
+                    <span class="flex items-center text-[10px] text-red-400 font-bold">🛡️ <span id="header-stat-def" class="ml-1">0</span></span>
                 </div>
             </div>
         </div>
         <div class="text-right">
-            <div class="flex items-center justify-end space-x-1 text-amber-500">
-                <span class="text-xs font-bold" id="goldValue">50</span>
-                <span class="text-[10px]">🪙</span>
+            <div class="flex items-center justify-end space-x-1 text-amber-500 mb-1">
+                <span class="text-sm font-bold" id="goldValue">50</span>
+                <span class="text-xs">🪙</span>
             </div>
-            <div class="flex flex-col items-end mt-1">
-                <div class="flex items-center space-x-2">
-                    <span id="fatigueText" class="text-[9px] text-purple-400 font-bold uppercase">Reposé 0%</span>
-                </div>
-                <div class="w-24 h-1 bg-stone-800 rounded-full mt-1 overflow-hidden">
-                    <div id="fatigueProgress" class="h-full bg-purple-600 transition-all duration-1000" style="width: 0%"></div>
-                </div>
+            <div class="w-24 bg-stone-800 h-1.5 rounded-full overflow-hidden border border-stone-700">
+                <div id="fatigueProgress" class="h-full bg-purple-600 transition-all duration-700" style="width: 0%"></div>
             </div>
+            <p id="fatigueText" class="text-[8px] text-stone-500 uppercase mt-1 font-bold tracking-tighter">Fatigue 0%</p>
         </div>
     </header>
 
-    <main class="flex-grow relative overflow-hidden bg-black">
-        <!-- TAB: AVENTURE -->
-        <div id="tab-story" class="tab-content active p-6 relative z-1">
-            <div class="mb-4 flex justify-between items-center border-b border-stone-800 pb-2">
-                <span id="currentLocationTitle" class="text-[10px] text-stone-500 uppercase tracking-widest font-bold">Lieu inconnu</span>
-                <span class="text-[8px] text-stone-600 italic">Chapitre I</span>
+    <main class="flex-grow relative">
+        <!-- ONGLET: AVENTURE -->
+        <div id="tab-story" class="tab-content active p-6">
+            <div class="flex justify-between items-center mb-6 border-b border-stone-800 pb-2">
+                <span id="currentLocationTitle" class="text-[10px] text-stone-400 uppercase tracking-widest font-bold italic"></span>
+                <span class="text-[8px] px-2 py-0.5 bg-stone-800 rounded text-stone-600 font-bold uppercase">Chroniques</span>
             </div>
             
-            <!-- ÉQUIPEMENT RAPIDE -->
-            <div class="grid grid-cols-3 gap-2 mb-6 fade-in">
-                <div onclick="switchTab('inventory')" class="equipment-slot p-2 flex flex-col items-center justify-center border-stone-800 min-h-[75px]">
-                    <p class="text-[6px] text-stone-500 uppercase font-bold mb-1 text-center">Main Droite</p>
-                    <span class="text-lg" id="slot-rightHand">⚔️</span>
-                    <p class="text-[8px] text-stone-200 font-bold truncate w-full text-center mt-1" id="name-rightHand">Vide</p>
-                    <p class="text-[7px] text-blue-400 font-bold" id="desc-rightHand"></p>
+            <div class="grid grid-cols-3 gap-3 mb-8">
+                <div class="equipment-slot p-2 flex flex-col items-center justify-center min-h-[100px]" id="ui-slot-rightHand">
+                    <span class="text-[7px] text-stone-500 uppercase font-bold mb-1">Arme</span>
+                    <span class="text-2xl mb-1" id="icon-rightHand">⚔️</span>
+                    <p class="text-[9px] text-stone-200 font-bold text-center leading-tight mb-1" id="name-rightHand">Vide</p>
+                    <span class="text-[7px] font-bold text-blue-400" id="stat-rightHand"></span>
                 </div>
-                <div onclick="switchTab('inventory')" class="equipment-slot p-2 flex flex-col items-center justify-center border-stone-800 min-h-[75px]">
-                    <p class="text-[6px] text-stone-500 uppercase font-bold mb-1 text-center">Main Gauche</p>
-                    <span class="text-lg" id="slot-leftHand">🛡️</span>
-                    <p class="text-[8px] text-stone-200 font-bold truncate w-full text-center mt-1" id="name-leftHand">Vide</p>
-                    <p class="text-[7px] text-red-400 font-bold" id="desc-leftHand"></p>
+                <div class="equipment-slot p-2 flex flex-col items-center justify-center min-h-[100px]" id="ui-slot-leftHand">
+                    <span class="text-[7px] text-stone-500 uppercase font-bold mb-1">Bouclier</span>
+                    <span class="text-2xl mb-1" id="icon-leftHand">🛡️</span>
+                    <p class="text-[9px] text-stone-200 font-bold text-center leading-tight mb-1" id="name-leftHand">Vide</p>
+                    <span class="text-[7px] font-bold text-red-400" id="stat-leftHand"></span>
                 </div>
-                <div onclick="switchTab('inventory')" class="equipment-slot p-2 flex flex-col items-center justify-center border-stone-800 min-h-[75px]">
-                    <p class="text-[6px] text-stone-500 uppercase font-bold mb-1 text-center">Corps</p>
-                    <span class="text-lg" id="slot-armor">👕</span>
-                    <p class="text-[8px] text-stone-200 font-bold truncate w-full text-center mt-1" id="name-armor">Vide</p>
-                    <p class="text-[7px] text-red-400 font-bold" id="desc-armor"></p>
+                <div class="equipment-slot p-2 flex flex-col items-center justify-center min-h-[100px]" id="ui-slot-armor">
+                    <span class="text-[7px] text-stone-500 uppercase font-bold mb-1">Armure</span>
+                    <span class="text-2xl mb-1" id="icon-armor">👕</span>
+                    <p class="text-[9px] text-stone-200 font-bold text-center leading-tight mb-1" id="name-armor">Vide</p>
+                    <span class="text-[7px] font-bold text-red-400" id="stat-armor"></span>
                 </div>
             </div>
 
-            <div id="itemNotificationArea" class="space-y-2 mb-4"></div>
-            <div id="storyLog" class="space-y-6 pb-80"></div>
+            <div id="itemNotificationArea" class="mb-4 space-y-2"></div>
+            <div id="storyLog" class="space-y-6"></div>
 
-            <div class="fixed bottom-24 left-0 right-0 px-6 pointer-events-none">
-                <div id="actionPanel" class="max-w-md mx-auto flex flex-col gap-2 pointer-events-auto"></div>
+            <div class="fixed bottom-24 left-0 right-0 px-6 z-10">
+                <div id="actionPanel" class="max-w-md mx-auto flex flex-col gap-2"></div>
             </div>
         </div>
 
-        <!-- TAB: SAC -->
-        <div id="tab-inventory" class="tab-content p-8 relative z-1">
-            <div class="flex justify-between items-end mb-6 border-b border-stone-800 pb-3">
-                <h2 class="text-stone-500 text-[10px] font-bold uppercase tracking-[0.5em]">Sac d'Aventure</h2>
-                <div class="flex space-x-4">
-                    <span class="text-blue-400 text-[10px] font-bold">ATK: <span id="stat-atk">0</span></span>
-                    <span class="text-red-400 text-[10px] font-bold">DEF: <span id="stat-def">0</span></span>
+        <!-- ONGLET: INVENTAIRE -->
+        <div id="tab-inventory" class="tab-content p-8">
+            <div class="sticky top-0 bg-stone-950 z-10 pb-4">
+                <div class="flex justify-between items-center border-b border-stone-800 pb-3">
+                    <h2 class="text-stone-500 text-[10px] font-bold uppercase tracking-[0.5em]">Inventaire</h2>
+                    <span class="text-[8px] text-stone-600 font-bold uppercase">Capacité Limitée</span>
                 </div>
             </div>
-            <div id="inventoryList" class="space-y-4 pb-20"></div>
+            <div id="inventoryList" class="space-y-3"></div>
         </div>
 
-        <!-- TAB: ÉCHOS -->
-        <div id="tab-journal" class="tab-content p-8 relative z-1">
-            <h2 class="text-stone-500 text-[10px] font-bold uppercase tracking-[0.5em] mb-6 border-b border-stone-800 pb-3">Mémoires de la Cendre</h2>
-            <div id="journalList" class="space-y-4 pb-20"></div>
+        <!-- ONGLET: JOURNAL -->
+        <div id="tab-journal" class="tab-content p-8">
+            <h2 class="text-stone-500 text-[10px] font-bold uppercase tracking-[0.5em] mb-6 border-b border-stone-800 pb-3">Notes de Voyage</h2>
+            <div id="journalList" class="space-y-4"></div>
+        </div>
+
+        <!-- ONGLET: SETTINGS -->
+        <div id="tab-settings" class="tab-content p-8">
+            <h2 class="text-stone-500 text-[10px] font-bold uppercase tracking-[0.5em] mb-6 border-b border-stone-800 pb-3">Système</h2>
+            <div id="saveList" class="space-y-3 mb-6"></div>
+            <button onclick="confirmReset()" class="w-full py-4 border border-red-900/40 text-red-500 text-[9px] font-bold uppercase rounded-lg">
+                Effacer la progression
+            </button>
         </div>
     </main>
 
-    <!-- NAV -->
-    <nav class="bottom-nav bg-stone-900 border-t border-stone-800 flex justify-around items-center py-4 z-20">
+    <!-- NAVIGATION -->
+    <nav class="bg-stone-900 border-t border-stone-800 flex justify-around items-center py-4 z-30 fixed bottom-0 left-0 right-0">
         <button onclick="switchTab('story')" class="nav-item flex flex-col items-center text-blue-500" id="nav-story">
             <span class="text-xl">🧭</span>
-            <span class="text-[8px] font-bold uppercase mt-1 tracking-widest">Aventure</span>
+            <span class="text-[8px] font-bold uppercase mt-1">Monde</span>
         </button>
         <button onclick="switchTab('inventory')" class="nav-item flex flex-col items-center text-stone-600" id="nav-inventory">
             <span class="text-xl">🎒</span>
-            <span class="text-[8px] font-bold uppercase mt-1 tracking-widest">Sac</span>
+            <span class="text-[8px] font-bold uppercase mt-1">Sac</span>
         </button>
         <button onclick="switchTab('journal')" class="nav-item flex flex-col items-center text-stone-600" id="nav-journal">
             <span class="text-xl">📜</span>
-            <span class="text-[8px] font-bold uppercase mt-1 tracking-widest">Échos</span>
+            <span class="text-[8px] font-bold uppercase mt-1">Journal</span>
+        </button>
+        <button onclick="switchTab('settings')" class="nav-item flex flex-col items-center text-stone-600" id="nav-settings">
+            <span class="text-xl">⚙️</span>
+            <span class="text-[8px] font-bold uppercase mt-1">Menu</span>
         </button>
     </nav>
 
     <script>
-        const state = {
+        const STOCK_LIMITS = {
+            'fiole_rouge': 3,
+            'fiole_verte': 3,
+            'torch': 5,
+            'rations': 5
+        };
+
+        const INITIAL_STATE = {
             hp: 100,
             gold: 50,
             fatigue: 0,
-            equipment: {
-                rightHand: null,
-                leftHand: null,
-                armor: null
-            },
+            equipment: { rightHand: null, leftHand: null, armor: null },
             inventory: [
-                { id: 'iron_sword', name: "Épée de Fer Froid", icon: "⚔️", type: "weapon", desc: "Forgée dans les mines de l'Ouest.", value: 12 },
-                { id: 'leather_armor', name: "Cuir Bouilli", icon: "🛡️", type: "armor", desc: "Protection souple mais solide.", value: 8 },
-                { id: 'torches', name: "Torches", icon: "🔦", type: "consumable", desc: "Repos salvateur (-50% Fatigue).", count: 3 },
-                { id: 'rations', name: "Rations", icon: "🍞", type: "consumable", desc: "Restaure 50% HP.", count: 3, heal: 50 },
-                { id: 'potion_hp', name: "Fiole de Soin", icon: "🧪", type: "consumable", desc: "Restaure 100% HP.", count: 1, heal: 100 }
+                { id: 'fiole_rouge', name: "Fiole de Sang", icon: "🧪", type: "consumable", count: 3, heal: 100, desc: "Élixir vital." },
+                { id: 'fiole_verte', name: "Fiole de Rosée", icon: "🧪", type: "consumable", count: 3, restoreFatigue: true, desc: "Infusion revigorante." },
+                { id: 'torch', name: "Torche Bleue", icon: "🔥", type: "consumable", count: 5, desc: "Lumière spectrale." },
+                { id: 'rations', name: "Rations Sèches", icon: "🍞", type: "consumable", count: 5, heal: 30, desc: "Vivres de voyage." },
+                { id: 'rusty_blade', name: "Lame de Garde", icon: "⚔️", type: "weapon", value: 12, desc: "Acier marqué par le temps." },
+                { id: 'leather_armor', name: "Cuir Bouilli", icon: "🛡️", type: "armor", value: 4, desc: "Souple et robuste." },
+                { id: 'round_shield', name: "Bouclier Rond", icon: "🛡️", type: "offhand", value: 8, desc: "Bois cerclé de fer." }
             ],
-            notes: ["L'aventure commence aux portes de Port-Sable."],
-            currentStep: 'port_start'
+            notes: ["Réveil près des quais..."],
+            currentStep: 'port_entry'
         };
 
+        let state = JSON.parse(JSON.stringify(INITIAL_STATE));
+
+        function getThreat(baseAtk) {
+            const power = (state.equipment.rightHand?.value || 0) + 
+                          (state.equipment.leftHand?.value || 0) + 
+                          (state.equipment.armor?.value || 0);
+            return {
+                atk: Math.floor(baseAtk + (power * 0.45)),
+                hp: Math.floor(60 + (power * 1.5))
+            };
+        }
+
         const storyData = {
-            port_start: {
+            port_entry: {
                 title: "Quais de Port-Sable",
-                text: "Les jetées massives de Port-Sable sont battues par une mer d'huile noire. Le vent transporte des relents de goudron et de chair salée. Un vieux pêcheur aveugle, **Elias**, est assis sur une caisse renversée. Il semble écouter le bruit de vos pas avec une attention inhabituelle.",
+                text: "Les eaux de la baie sont immobiles, noires comme de l'encre renversée sous un ciel sans lune. Une brume épaisse rampe sur les pavés disjoints, portant l'odeur de la pourriture noble et de l'iode. Devant une cabane de bois flotté, **Elias le Pêcheur** recoud un filet dont les mailles semblent capturer les murmures du vent.",
                 actions: [
-                    { label: "Interroger Elias le pêcheur", next: "elias_talk", icon: "👤" },
-                    { label: "Chercher le marché local", next: "market", icon: "🏺" },
-                    { label: "Quitter la ville immédiatement", next: "dust_road", icon: "🥾", fatigue: 15 }
+                    { label: "Parler à Elias", next: 'elias_talk', icon: "👤" },
+                    { label: "Aller au Marché Noir", next: 'black_market', icon: "🏺" },
+                    { label: "Prendre la Route du Sud", next: 'south_road', icon: "🥾", fatigue: 15 }
                 ]
             },
             elias_talk: {
-                title: "L'Avertissement d'Elias",
-                text: "Elias lève son visage couturé vers vous. « Je sens l'odeur de la cendre sur vous, étranger. Si vous comptez prendre la route de la Poussière, sachez que les Sombres-lianes ne craignent pas le fer froid, mais elles reculent devant la lumière. »",
+                title: "Conseils d'un Vieil Homme",
+                text: "Elias ne lève pas les yeux de son ouvrage. « Les Sombres-lianes qui infestent la route du Sud ont appris à craindre l'acier, étranger. Plus votre lame est tranchante, plus leur écorce s'endurcit. Ne négligez pas vos torches ; l'ombre n'aime pas être révélée. »",
                 actions: [
-                    { label: "Lui donner 2 pièces d'or", next: "elias_gift", icon: "🪙", cost: 2 },
-                    { label: "Demander le chemin du marché", next: "market", icon: "🗺️" },
-                    { label: "Ignorer le vieillard", next: "port_start", icon: "↩️" }
+                    { label: "Lui donner 5 pièces", next: 'elias_bless', cost: 5, icon: "🪙" },
+                    { label: "Retourner aux quais", next: 'port_entry', icon: "↩️" }
                 ]
             },
-            elias_gift: {
-                title: "Le Geste d'Elias",
-                text: "Ses doigts noueux se referment sur l'or. « Vous avez un cœur brave... Tenez, un marin a laissé ceci derrière lui. Cela pourra vous aider dans l'obscurité. »",
-                actions: [{ label: "Retourner au port", next: "port_start", icon: "↩️" }, { label: "Vers le marché", next: "market", icon: "🏺" }, { label: "Partir", next: "dust_road", icon: "🥾", fatigue: 15 }],
+            elias_bless: {
+                title: "Geste de Gratitude",
+                text: "Elias sort une petite fiole de sa besace. « Prenez ceci. Un reste de rosée matinale. Ça calme les membres fatigués. »",
+                actions: [{ label: "Continuer", next: 'port_entry', icon: "🧭" }],
                 onEnter: () => {
-                    state.gold -= 2;
-                    addItem({ id: 'oil_lamp', name: "Lampe à Huile", icon: "🏮", type: "consumable", desc: "Chasse les ombres plus longtemps.", count: 1 });
-                    state.notes.push("Elias m'a averti que le feu est la clé contre les Sombres-lianes.");
+                    const added = addItem({ id: 'fiole_verte', name: "Fiole de Rosée", icon: "🧪", type: "consumable", count: 1, restoreFatigue: true, desc: "Infusion revigorante." });
+                    if(!added) state.gold += 5;
                 }
             },
-            market: {
-                title: "Étal de Dame Sif",
-                text: "Une femme athlétique au regard d'acier, **Sif**, gère l'unique étalage ouvert. Elle affûte une dague avec une précision mécanique. « Des affaires à faire, ou vous n'êtes là que pour l'ombre de ma tente ? »",
+            black_market: {
+                title: "Le Bazar des Ombres",
+                text: "Caché entre deux entrepôts en ruine, le marché bourdonne d'une activité illicite. **Maître Silas**, un homme au visage masqué de bandages, expose des lames d'un noir mat. Plus loin, **Kaelen la Chasseuse** nettoie ses pièges avec une précision de chirurgien.",
                 actions: [
-                    { label: "Bouclier de bois (15g)", next: "buy_shield", icon: "🛡️", cost: 15 },
-                    { label: "Dague courbe (10g)", next: "buy_dagger", icon: "🗡️", cost: 10 },
-                    { label: "Acheter des Rations (5g)", next: "buy_food", icon: "🍞", cost: 5 },
-                    { label: "Retourner aux quais", next: "port_start", icon: "↩️" }
+                    { label: "Maître Silas (Armes)", next: 'silas_shop', icon: "⚔️" },
+                    { label: "Acheter des Vivres (10g)", next: 'buy_food', cost: 10, icon: "🍞" },
+                    { label: "Quitter le marché", next: 'port_entry', icon: "↩️" }
+                ]
+            },
+            silas_shop: {
+                title: "L'Arsenal de Silas",
+                text: "Silas fait glisser une dague sur le velours. « L'acier de Port-Sable est trempé dans le regret. Choisissez bien. »",
+                actions: [
+                    { label: "Épée Lourde (35g)", next: 'buy_sword', cost: 35, icon: "🗡️" },
+                    { label: "Bouclier d'Apparat (30g)", next: 'buy_shield', cost: 30, icon: "🛡️" },
+                    { label: "Retourner", next: 'black_market', icon: "↩️" }
                 ]
             },
             buy_food: {
-                title: "Vivres de Sif",
-                text: "Le pain est dur, mais nourrissant. « Ne mourez pas de faim avant que les monstres ne vous trouvent », lâche Sif avec un sourire en coin.",
-                actions: [{ label: "Rester au marché", next: "market", icon: "↩️" }, { label: "Retourner au port", next: "port_start", icon: "⚓" }, { label: "S'en aller", next: "dust_road", icon: "🥾", fatigue: 15 }],
+                title: "Ravitaillement",
+                text: "Le marchand vous tend un paquet de viandes séchées.",
+                actions: [{ label: "Retourner", next: 'black_market', icon: "↩️" }],
                 onEnter: () => {
-                    state.gold -= 5;
-                    addItem({ id: 'rations_extra', name: "Rations Fraîches", icon: "🍞", type: "consumable", desc: "Restaure 50% HP.", count: 1, heal: 50 });
+                    const added = addItem({ id: 'rations', name: "Rations Sèches", icon: "🍞", type: "consumable", count: 1, heal: 30, desc: "Vivres de voyage." });
+                    if(!added) state.gold += 10;
+                }
+            },
+            buy_sword: {
+                title: "Nouvelle Arme",
+                text: "Vous sentez le poids réconfortant de l'acier neuf.",
+                actions: [{ label: "Continuer", next: 'black_market', icon: "↩️" }],
+                onEnter: () => {
+                    addItem({ id: 'heavy_sword', name: "Épée de Silas", icon: "⚔️", type: "weapon", value: 25, desc: "Forgée dans l'ombre." });
                 }
             },
             buy_shield: {
-                title: "L'Écu de Sif",
-                text: "Sif frappe le bois du bouclier avec son poing. « C'est du chêne noir. Plus résistant que la tête d'un garde de la cité. »",
-                actions: [{ label: "S'équiper et rester", next: "market", icon: "↩️" }, { label: "Partir aux quais", next: "port_start", icon: "⚓" }, { label: "Partir", next: "dust_road", icon: "🥾", fatigue: 15 }],
+                title: "Nouveau Bouclier",
+                text: "Un bouclier massif, gravé d'emblèmes oubliés.",
+                actions: [{ label: "Continuer", next: 'black_market', icon: "↩️" }],
                 onEnter: () => {
-                    state.gold -= 15;
-                    addItem({ id: 'wooden_shield', name: "Bouclier en Bois", icon: "🛡️", type: "offhand", desc: "Protection de main gauche.", value: 10 });
+                    addItem({ id: 'ceremonial_shield', name: "Écu d'Apparat", icon: "🛡️", type: "offhand", value: 15, desc: "Lourd et ornementé." });
                 }
             },
-            buy_dagger: {
-                title: "Lame Dentelée",
-                text: "La lame est fine et mortelle. « Équilibrez-la bien », prévient Sif. Vous sentez le poids réconfortant de l'arme.",
-                actions: [{ label: "Rester", next: "market", icon: "↩️" }, { label: "Quais", next: "port_start", icon: "⚓" }, { label: "Route", next: "dust_road", icon: "🥾", fatigue: 15 }],
-                onEnter: () => {
-                    state.gold -= 10;
-                    addItem({ id: 'rusty_dagger', name: "Dague Rouillée", icon: "🗡️", type: "weapon", desc: "Lame de secours.", value: 6 });
-                }
-            },
-            dust_road: {
-                title: "La Route de Poussière",
-                text: "Vous quittez Port-Sable. La route s'enfonce dans une brume sèche qui irrite les poumons. Soudain, un chariot renversé barre le chemin. Une voix gémit depuis l'intérieur : « De l'aide... par pitié... »",
+            south_road: {
+                title: "La Route du Sud",
+                text: "Le chemin s'enfonce dans une végétation maladive. Une silhouette se détache de l'ombre d'un chêne mort.",
                 actions: [
-                    { label: "Approcher prudemment", next: "trap_or_help", icon: "🔍" },
-                    { label: "Contourner par les fossés", next: "ditch_path", icon: "🌫️", fatigue: 10 },
-                    { label: "Crier pour identifier l'individu", next: "shout_road", icon: "🗣️" }
+                    { label: "Combattre l'Apparition", next: 'fight_shadow', icon: "⚔️" },
+                    { label: "Fuir vers le port", next: 'port_entry', icon: "🏃" }
                 ]
             },
-            shout_road: {
-                title: "L'Inconnu du Chariot",
-                text: "La voix s'arrête. Un homme maigre, couvert de boue, émerge. C'est **Kael**, un colporteur. « Oh, merci aux Dieux ! Les bêtes m'ont attaqué. Aidez-moi à redresser le chariot et je partagerai mon secret. »",
+            fight_shadow: {
+                title: "L'Ombre S'adapte",
+                text: "La créature pousse un cri strident. Son corps se durcit au contact de votre lumière.",
                 actions: [
-                    { label: "L'aider (Dépense Fatigue)", next: "help_kael", icon: "💪", fatigue: 20 },
-                    { label: "Le voler et partir", next: "rob_kael", icon: "💰" },
-                    { label: "Continuer son chemin seul", next: "encounter_1", icon: "🥾" }
-                ]
-            },
-            help_kael: {
-                title: "Gratitude de Kael",
-                text: "Le chariot est lourd mais vous réussissez. Kael vous remercie chaudement. « Tenez, la brume cache une grotte sur la droite, elle mène au Pic sans passer par le nid des Sombres-lianes. »",
-                actions: [{ label: "Prendre le raccourci", next: "secret_cave", icon: "🕳️" }, { label: "Rester sur la route", next: "encounter_1", icon: "🛣️" }, { label: "Se reposer avec Kael", next: "rest_kael", icon: "🔥" }],
-                onEnter: () => {
-                    state.notes.push("Kael m'a montré un raccourci vers le Pic.");
-                }
-            },
-            encounter_1: {
-                title: "Les Sombres-lianes",
-                text: "La brume s'épaissit. Des vrilles végétales et noirâtres serpentent sur le sol. Elles se redressent brusquement, révélant des formes humanoïdes sans visage. Elias avait raison : elles sont là.",
-                actions: [
-                    { label: "Combattre au fer", next: "victory", icon: "⚔️" },
-                    { label: "Utiliser une Torche (Sac)", next: "fire_victory", icon: "🔥", action: () => switchTab('inventory') },
-                    { label: "Tenter de fuir", next: "escape_fail", icon: "🏃" }
+                    { label: "Victoire", next: 'port_entry', icon: "🏆" }
                 ],
                 onEnter: () => {
-                    const totalDef = (state.equipment.armor?.value || 0) + (state.equipment.leftHand?.value || 0);
-                    const damage = Math.max(5, 30 - totalDef);
-                    state.hp -= damage;
-                    showNotification(`Le combat fait rage ! Vous subissez ${damage} PV.`);
+                    const enemy = getThreat(18);
+                    const def = (state.equipment.armor?.value || 0) + (state.equipment.leftHand?.value || 0);
+                    const dmg = Math.max(8, enemy.atk - def);
+                    state.hp -= dmg;
+                    showNotification(`L'Ombre (ATK ${enemy.atk}) vous blesse de ${dmg} PV.`);
                 }
-            },
-            victory: {
-                title: "Un Calme Pesant",
-                text: "Vous avez tranché les lianes, mais elles semblent déjà se régénérer lentement. Vous ne devez pas traîner ici.",
-                actions: [{ label: "Avancer vers le Pic", next: "port_start", icon: "⛰️" }, { label: "Fouiller les cadavres", next: "loot_monsters", icon: "🔍" }, { label: "Retourner se soigner", next: "port_start", icon: "↩️" }]
             }
         };
 
-        // --- CORE LOGIC ---
-
-        function toggleEquipment(item) {
-            let slot = "";
-            if (item.type === "weapon") slot = "rightHand";
-            else if (item.type === "offhand") slot = "leftHand";
-            else if (item.type === "armor") slot = "armor";
-            else return false;
-
-            if (state.equipment[slot] && state.equipment[slot].id === item.id) {
-                state.equipment[slot] = null;
-                showNotification(`${item.name} retiré.`);
-            } else {
-                state.equipment[slot] = item;
-                showNotification(`${item.name} équipé.`);
-            }
-            updateUI();
-            updateInventoryUI();
-            return true;
-        }
-
         function addItem(item) {
-            state.inventory.push(item);
-            showNotification(`Acquis : ${item.name}`);
+            const limit = STOCK_LIMITS[item.id];
+            const existing = state.inventory.find(i => i.id === item.id);
+
+            if (limit !== undefined) {
+                const currentCount = existing ? existing.count : 0;
+                if (currentCount >= limit) {
+                    showNotification(`Stock MAX atteint pour : ${item.name}`, true);
+                    return false; 
+                }
+                
+                if (existing) {
+                    existing.count = Math.min(limit, existing.count + (item.count || 1));
+                } else {
+                    state.inventory.push({ ...item });
+                }
+            } else {
+                state.inventory.push({ ...item });
+            }
+            
+            showNotification(`+ ${item.name}`);
             updateInventoryUI();
+            updateUI();
+            return true;
         }
 
         function useItem(itemId) {
             const index = state.inventory.findIndex(i => i.id === itemId);
             const item = state.inventory[index];
-            if (!item) return;
 
-            if (["weapon", "offhand", "armor"].includes(item.type)) {
-                toggleEquipment(item);
-                return;
-            }
-
-            if (item.type === "consumable") {
-                if (item.id === 'torches') {
-                    state.fatigue = Math.max(0, state.fatigue - 50);
-                } else if (item.heal) {
-                    state.hp = Math.min(100, state.hp + item.heal);
+            if (['weapon', 'armor', 'offhand'].includes(item.type)) {
+                let slot = item.type === 'weapon' ? 'rightHand' : (item.type === 'armor' ? 'armor' : 'leftHand');
+                
+                if (state.equipment[slot]?.id === item.id) {
+                    state.equipment[slot] = null;
+                    showNotification(`${item.name} retiré`);
+                } else {
+                    state.equipment[slot] = item;
+                    showNotification(`${item.name} équipé`);
                 }
+            } else {
+                if (item.heal) state.hp = Math.min(100, (item.heal === 100 ? 100 : state.hp + item.heal));
+                if (item.restoreFatigue) state.fatigue = 0;
+                
                 item.count--;
                 if (item.count <= 0) state.inventory.splice(index, 1);
-                showNotification(`Consommé : ${item.name}`);
-                updateUI();
-                updateInventoryUI();
-                setTimeout(() => switchTab('story'), 400);
             }
+            updateUI();
+            updateInventoryUI();
+            saveGame();
         }
 
+        let healthChart = null;
+
         function updateUI() {
-            const hpValEl = document.getElementById('hpValue');
-            if(hpValEl) hpValEl.innerText = Math.max(0, state.hp);
-            if(healthChart) {
+            document.getElementById('hpValue').innerText = Math.max(0, state.hp);
+            document.getElementById('goldValue').innerText = state.gold;
+            
+            const atk = state.equipment.rightHand?.value || 0;
+            const def = (state.equipment.leftHand?.value || 0) + (state.equipment.armor?.value || 0);
+            
+            document.getElementById('header-stat-atk').innerText = atk;
+            document.getElementById('header-stat-def').innerText = def;
+            document.getElementById('fatigueProgress').style.width = state.fatigue + "%";
+            document.getElementById('fatigueText').innerText = `Fatigue ${state.fatigue}%`;
+
+            ['rightHand', 'leftHand', 'armor'].forEach(slot => {
+                const item = state.equipment[slot];
+                document.getElementById('name-' + slot).innerText = item ? item.name : 'Vide';
+                document.getElementById('icon-' + slot).innerText = item ? item.icon : (slot==='armor'?'👕':slot==='leftHand'?'🛡️':'⚔️');
+                document.getElementById('stat-' + slot).innerText = item ? (slot==='rightHand'?'ATK +':'DEF +') + item.value : '';
+                document.getElementById('ui-slot-' + slot).classList.toggle('active', !!item);
+            });
+
+            if (healthChart) {
                 healthChart.data.datasets[0].data = [state.hp, 100 - state.hp];
                 healthChart.update();
             }
-            const goldValEl = document.getElementById('goldValue');
-            if(goldValEl) goldValEl.innerText = state.gold;
-
-            const atk = (state.equipment.rightHand?.value || 0);
-            const def = (state.equipment.armor?.value || 0) + (state.equipment.leftHand?.value || 0);
-            
-            const hAtk = document.getElementById('header-stat-atk');
-            const hDef = document.getElementById('header-stat-def');
-            if(hAtk) hAtk.innerText = atk;
-            if(hDef) hDef.innerText = def;
-
-            const sAtk = document.getElementById('stat-atk');
-            const sDef = document.getElementById('stat-def');
-            if(sAtk) sAtk.innerText = atk;
-            if(sDef) sDef.innerText = def;
-
-            const fProgress = document.getElementById('fatigueProgress');
-            const fText = document.getElementById('fatigueText');
-            if(fProgress && fText) {
-                fProgress.style.width = `${state.fatigue}%`;
-                fText.innerText = `${state.fatigue >= 80 ? 'Épuisé' : state.fatigue >= 50 ? 'Fatigué' : 'Reposé'} ${state.fatigue}%`;
-                fProgress.className = `h-full transition-all duration-1000 ${state.fatigue >= 80 ? 'bg-red-600' : 'bg-purple-600'}`;
-            }
-
-            const slots = ["rightHand", "leftHand", "armor"];
-            const defaultIcons = { rightHand: "⚔️", leftHand: "🛡️", armor: "👕" };
-            slots.forEach(s => {
-                const eq = state.equipment[s];
-                const iconEl = document.getElementById(`slot-${s}`);
-                const nameEl = document.getElementById(`name-${s}`);
-                const descEl = document.getElementById(`desc-${s}`);
-                
-                if(iconEl) iconEl.innerText = eq ? eq.icon : defaultIcons[s];
-                if(nameEl) {
-                    nameEl.innerText = eq ? eq.name : "Vide";
-                    nameEl.className = eq ? "text-[8px] text-stone-200 font-bold truncate w-full text-center mt-1" : "text-[8px] text-stone-600 font-bold truncate w-full text-center mt-1";
-                }
-                if (descEl) {
-                    descEl.innerText = eq ? `${eq.type === "weapon" ? "ATK" : "DEF"} +${eq.value}` : "";
-                }
-            });
-        }
-
-        function updateInventoryUI() {
-            const invList = document.getElementById('inventoryList');
-            if(!invList) return;
-            invList.innerHTML = '';
-            state.inventory.forEach(item => {
-                const isEq = Object.values(state.equipment).some(e => e && e.id === item.id);
-                invList.innerHTML += `
-                    <div onclick="useItem('${item.id}')" class="item-card bg-stone-900/60 p-4 rounded-2xl border ${isEq ? 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.1)]' : 'border-stone-800'} flex items-center space-x-4">
-                        <span class="text-2xl">${item.icon}</span>
-                        <div class="flex-grow">
-                            <div class="flex justify-between items-start">
-                                <h3 class="text-[9px] font-bold ${isEq ? 'text-blue-400' : 'text-stone-300'} uppercase tracking-widest">${item.name} ${item.count > 1 ? `(x${item.count})` : ''}</h3>
-                                ${isEq ? '<span class="text-[6px] bg-blue-900/40 px-2 py-1 rounded text-blue-300 border border-blue-500/30 font-bold">ÉQUIPÉ</span>' : ''}
-                            </div>
-                            <p class="text-[8px] text-stone-500 italic mt-1">${item.desc} ${item.value ? `(${item.type === 'weapon' ? 'ATK' : 'DEF'} +${item.value})` : ''}</p>
-                        </div>
-                    </div>`;
-            });
-        }
-
-        function updateJournalUI() {
-            const journal = document.getElementById('journalList');
-            if(!journal) return;
-            journal.innerHTML = state.notes.map(note => `
-                <div class="bg-stone-900/40 border border-stone-800 p-4 rounded-xl">
-                    <p class="text-[10px] text-stone-400 story-text italic">"${note}"</p>
-                </div>
-            `).join('');
         }
 
         function renderStep(stepId) {
             const step = storyData[stepId];
             if (!step) return;
-            if (step.fatigue) state.fatigue = Math.min(100, state.fatigue + step.fatigue);
+            state.currentStep = stepId;
             if (step.onEnter) step.onEnter();
 
-            const locTitle = document.getElementById('currentLocationTitle');
-            if(locTitle) locTitle.innerText = step.title;
-
-            const log = document.getElementById('storyLog');
-            if(log) {
-                log.innerHTML = `<div class="fade-in bg-stone-900/80 p-6 rounded-3xl border border-stone-800 shadow-2xl backdrop-blur-md">
-                    <p class="story-text text-stone-300 leading-relaxed text-[12px] italic font-medium">${step.text}</p>
+            document.getElementById('currentLocationTitle').innerText = step.title;
+            document.getElementById('storyLog').innerHTML = `
+                <div class="fade-in bg-stone-900/50 p-6 rounded-xl border border-stone-800">
+                    <p class="story-text text-stone-300 text-sm italic">${step.text}</p>
                 </div>`;
-            }
 
             const panel = document.getElementById('actionPanel');
-            if(panel) {
-                panel.innerHTML = '';
-                step.actions.forEach(act => {
-                    const btn = document.createElement('button');
-                    const canAfford = !act.cost || state.gold >= act.cost;
-                    btn.className = `action-btn w-full flex items-center justify-between p-4 rounded-2xl text-stone-400 font-bold uppercase tracking-[0.2em] text-[9px] ${!canAfford ? 'opacity-40 pointer-events-none' : ''}`;
-                    btn.innerHTML = `<span>${act.icon} ${act.label} ${act.cost ? `(${act.cost}g)` : ''}</span> <span>→</span>`;
-                    btn.onclick = () => {
-                        if (act.action) act.action();
-                        else {
-                            state.currentStep = act.next;
-                            renderStep(act.next);
-                        }
-                    };
-                    panel.appendChild(btn);
-                });
-            }
+            panel.innerHTML = '';
+            step.actions.forEach(act => {
+                const canAfford = !act.cost || state.gold >= act.cost;
+                const btn = document.createElement('button');
+                btn.className = `action-btn p-4 rounded-xl flex justify-between items-center text-[9px] font-bold uppercase tracking-widest ${!canAfford ? 'disabled' : ''}`;
+                btn.innerHTML = `<span>${act.icon} ${act.label} ${act.cost ? `(${act.cost}g)` : ''}</span> <span>→</span>`;
+                btn.onclick = () => {
+                    if (act.cost) state.gold -= act.cost;
+                    if (act.fatigue) state.fatigue = Math.min(100, state.fatigue + act.fatigue);
+                    renderStep(act.next);
+                };
+                panel.appendChild(btn);
+            });
             updateUI();
         }
 
-        function showNotification(text) {
+        function updateInventoryUI() {
+            const list = document.getElementById('inventoryList');
+            list.innerHTML = state.inventory.map(item => {
+                const isEq = Object.values(state.equipment).some(e => e?.id === item.id);
+                const limit = STOCK_LIMITS[item.id];
+                const atMax = limit && item.count >= limit;
+
+                // Génération des caractéristiques affichées
+                let statsHtml = '';
+                if (item.value) statsHtml = `<span class="text-blue-400"> +${item.value} ${item.type==='weapon'?'ATK':'DEF'}</span>`;
+                if (item.heal) statsHtml = `<span class="text-red-400"> +${item.heal} PV</span>`;
+                if (item.restoreFatigue) statsHtml = `<span class="text-purple-400"> Énergie MAX</span>`;
+
+                return `
+                    <div onclick="useItem('${item.id}')" class="item-card p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:border-stone-700 ${isEq ? 'border-blue-500 bg-blue-900/10' : ''} ${atMax ? 'at-max' : ''}">
+                        <span class="text-2xl">${item.icon}</span>
+                        <div class="flex-grow">
+                            <div class="flex justify-between items-start">
+                                <h3 class="text-[10px] font-bold uppercase text-stone-100">
+                                    ${item.name} ${statsHtml}
+                                </h3>
+                                <span class="text-[9px] font-bold ${atMax ? 'text-red-500' : 'text-stone-500'}">
+                                    ${limit ? `${item.count} / ${limit}` : ''}
+                                </span>
+                            </div>
+                            <p class="text-[8px] text-stone-500 italic mt-1">${item.desc}</p>
+                        </div>
+                        ${isEq ? '<span class="text-[8px] bg-blue-500 text-white px-2 py-0.5 rounded font-bold uppercase">Équipé</span>' : ''}
+                    </div>`;
+            }).join('');
+        }
+
+        function showNotification(msg, error = false) {
             const area = document.getElementById('itemNotificationArea');
-            if(!area) return;
-            const notif = document.createElement('div');
-            notif.className = "item-notification p-3 rounded-xl text-[9px] text-blue-200 italic shadow-lg mb-2 fade-in";
-            notif.innerText = `✨ ${text}`;
-            area.appendChild(notif);
-            setTimeout(() => { if(notif.parentNode) area.removeChild(notif); }, 4000);
+            const el = document.createElement('div');
+            el.className = `fade-in p-2 px-3 rounded text-[9px] font-bold uppercase tracking-widest border-l-2 ${error ? 'bg-red-900/20 text-red-400 border-red-500' : 'bg-blue-900/20 text-blue-300 border-blue-500'}`;
+            el.innerText = msg;
+            area.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
         }
 
-        let healthChart = null;
-        function initChart() {
-            const canvas = document.getElementById('healthMiniChart');
-            if(!canvas) return;
-            const ctxH = canvas.getContext('2d');
-            healthChart = new Chart(ctxH, {
-                type: 'doughnut',
-                data: { datasets: [{ data: [100, 0], backgroundColor: ['#991b1b', '#1c1917'], borderWidth: 0 }] },
-                options: { cutout: '85%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
-            });
-        }
-
-        function switchTab(tabId) {
+        function switchTab(id) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.replace('text-blue-500', 'text-stone-600'));
-            const targetTab = document.getElementById('tab-' + tabId);
-            const targetNav = document.getElementById('nav-' + tabId);
-            if(targetTab) targetTab.classList.add('active');
-            if(targetNav) targetNav.classList.replace('text-stone-600', 'text-blue-500');
-            if(tabId === 'inventory') updateInventoryUI();
-            if(tabId === 'journal') updateJournalUI();
+            document.getElementById('tab-' + id).classList.add('active');
+            document.getElementById('nav-' + id).classList.replace('text-stone-600', 'text-blue-500');
+            if(id === 'inventory') updateInventoryUI();
+            if(id === 'journal') {
+                document.getElementById('journalList').innerHTML = state.notes.map(n => `<div class="p-3 bg-stone-900 border border-stone-800 rounded text-[10px] italic text-stone-500">${n}</div>`).join('');
+            }
+            if(id === 'settings') updateSaveUI();
+        }
+
+        function saveGame() {
+            localStorage.setItem('ls_save', JSON.stringify(state));
+        }
+
+        function updateSaveUI() {
+            const list = document.getElementById('saveList');
+            const hasSave = localStorage.getItem('ls_save');
+            list.innerHTML = hasSave ? `
+                <div class="p-4 bg-stone-900 rounded-lg flex justify-between items-center border border-stone-800">
+                    <span class="text-[10px] font-bold uppercase">Sauvegarde Automatique</span>
+                    <button onclick="loadGame()" class="text-blue-400 text-[10px] font-bold uppercase">Charger</button>
+                </div>` : '<p class="text-[10px] text-stone-600 text-center">Aucune sauvegarde trouvée</p>';
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('ls_save');
+            if(saved) {
+                state = JSON.parse(saved);
+                renderStep(state.currentStep);
+                switchTab('story');
+            }
+        }
+
+        function confirmReset() {
+            if(confirm("Tout effacer ?")) {
+                localStorage.removeItem('ls_save');
+                location.reload();
+            }
         }
 
         window.onload = () => {
-            initChart();
-            state.equipment.rightHand = state.inventory[0];
-            state.equipment.armor = state.inventory[1];
-            renderStep('port_start');
+            const ctx = document.getElementById('healthMiniChart').getContext('2d');
+            healthChart = new Chart(ctx, { 
+                type: 'doughnut', 
+                data: { datasets: [{ data: [100, 0], backgroundColor: ['#991b1b', '#1c1917'], borderWidth: 0 }] }, 
+                options: { cutout: '85%', plugins: { legend: { display: false }, tooltip: { enabled: false } } } 
+            });
+            const saved = localStorage.getItem('ls_save');
+            if(saved) state = JSON.parse(saved);
+            renderStep(state.currentStep);
         };
     </script>
 </body>
